@@ -7,14 +7,6 @@ import (
 	"sync"
 )
 
-type MyStruct struct {
-	sync.Mutex
-}
-
-type MyStruct2 struct {
-	mu sync.Mutex
-}
-
 type JobHandler func() error
 type Job struct {
 	name           string
@@ -68,25 +60,19 @@ func (w *Worker) Run() {
 		if len(w.jobs) > 0 {
 			go func() {
 				w.mu.Lock()
+				defer w.mu.Unlock()
 				lastIndex := len(w.jobs) - 1
 				currentJob := w.jobs[lastIndex]
-				w.mu.Unlock()
 
 				if currentJob.currentAttempt < currentJob.attempts {
 					currentJob.currentAttempt++
 					w.log("Попытка [%d из %d] выполнения задачи [%s]", currentJob.currentAttempt, currentJob.attempts, currentJob.name)
-					w.mu.Lock()
-					w.mu.Unlock()
 					if err := currentJob.handler(); err != nil {
 						w.log("Задача [%s] выполнена с ошибкой: %s", currentJob.name, err)
-						w.mu.Lock()
 						currentJob.errors = append(currentJob.errors, err.Error())
-						w.mu.Unlock()
 					} else {
 						w.log("Задача [%s] выполнена успешно", currentJob.name)
-						w.mu.Lock()
 						w.jobs = w.jobs[:lastIndex]
-						w.mu.Unlock()
 					}
 				}
 				runtime.Gosched()
