@@ -3,6 +3,7 @@ package telegram
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -43,7 +44,7 @@ func New(config *Config) *Telegram {
 	}
 }
 
-func (t *Telegram) Send(text string) (*http.Response, error) {
+func (t *Telegram) Send(text string) (string, error) {
 	params := url.Values{}
 	params.Set("chat_id", t.config.ChatId)
 	params.Set("text", text)
@@ -54,7 +55,7 @@ func (t *Telegram) Send(text string) (*http.Response, error) {
 			Date:  time.Now(),
 			Error: err,
 		})
-		return nil, err
+		return "", err
 	}
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
@@ -63,8 +64,11 @@ func (t *Telegram) Send(text string) (*http.Response, error) {
 			Date:  time.Now(),
 			Error: err,
 		})
-		return nil, err
+		return "", err
 	}
-	resCopy := res
-	return resCopy, nil
+	data, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }
