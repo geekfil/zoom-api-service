@@ -14,5 +14,4 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Panicln(err)
 	}
-
 }
