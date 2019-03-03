@@ -3,6 +3,7 @@ package app
 import (
 	"github.com/caarlos0/env"
 	"github.com/geekfil/zoom-api-service/telegram"
+	"github.com/geekfil/zoom-api-service/worker"
 	"github.com/labstack/echo"
 	"log"
 )
@@ -23,6 +24,7 @@ type App struct {
 	Echo     *echo.Echo
 	Telegram *telegram.Telegram
 	Config   *Config
+	worker   *worker.Worker
 }
 
 func (app *App) Run() {
@@ -31,12 +33,13 @@ func (app *App) Run() {
 	}
 }
 
-func New(tg *telegram.Telegram, config *Config) *App {
+func New(tg *telegram.Telegram, config *Config, worker *worker.Worker) *App {
 	_echo := echo.New()
 	_app := &App{
 		_echo,
 		tg,
 		config,
+		worker,
 	}
 	_app.handlers()
 	return _app

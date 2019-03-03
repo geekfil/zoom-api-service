@@ -2,6 +2,7 @@ package app
 
 import (
 	"github.com/geekfil/zoom-api-service/telegram"
+	"github.com/geekfil/zoom-api-service/worker"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/labstack/echo"
 	"net/http"
@@ -15,6 +16,7 @@ func (app App) handlers() {
 	app.Echo.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(ctx echo.Context) error {
 			ctx.Set("tg", app.Telegram)
+			ctx.Set("worker", app.worker)
 			return next(ctx)
 		}
 	})
@@ -46,13 +48,14 @@ func (app App) handlers() {
 	telegramGroup.GET("/send", func(ctx echo.Context) error {
 
 		var tg = ctx.Get("tg").(*telegram.Telegram)
+		var workerJob = ctx.Get("worker").(*worker.Worker)
 		var text string
 		if text = ctx.QueryParam("text"); len(text) == 0 {
 			return echo.NewHTTPError(400, "text is required")
 		}
 
-		go func(chatid int64, text string) {
-			if _, err := tg.Bot.Send(tgbotapi.NewMessage(chatid, text)); err != nil {
+		workerJob.AddJob("Отправка уведомления в Telegram", func() error {
+			if _, err := tg.Bot.Send(tgbotapi.NewMessage(app.Telegram.Config.ChatId, text)); err != nil {
 				app.Telegram.Lock()
 				app.Telegram.SendErrors = append(app.Telegram.SendErrors, telegram.SendError{
 					Date: time.Now(),
@@ -67,11 +70,11 @@ func (app App) handlers() {
 					TypeError: reflect.TypeOf(err).String(),
 				})
 				app.Telegram.Unlock()
+				return err
 			}
 
-			runtime.Gosched()
-
-		}(tg.Config.ChatId, text)
+			return nil
+		}, 5)
 
 		return ctx.JSON(200, map[string]string{
 			"message": "OK",
