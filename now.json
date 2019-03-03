@@ -5,6 +5,7 @@
   ],
   "env": {
     "TELEGRAM_TOKEN": "@telegram-token",
+    "APP_TOKEN": "@app-token",
     "TELEGRAM_CHAT_ID": "-1001234543179",
     "TELEGRAM_CONNECT_TIMEOUT": "3s"
   },
