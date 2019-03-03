@@ -5,7 +5,6 @@ import (
 	"github.com/geekfil/zoom-api-service/telegram"
 	"github.com/labstack/echo"
 	"log"
-	"sync"
 )
 
 type Config struct {
@@ -24,7 +23,6 @@ type App struct {
 	Echo     *echo.Echo
 	Telegram *telegram.Telegram
 	Config   *Config
-	mutex    sync.RWMutex
 }
 
 func (app *App) Run() {
@@ -39,7 +37,6 @@ func New(tg *telegram.Telegram, config *Config) *App {
 		_echo,
 		tg,
 		config,
-		sync.RWMutex{},
 	}
 	_app.handlers()
 	return _app

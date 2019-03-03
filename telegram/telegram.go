@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 )
 
@@ -49,6 +50,7 @@ type SendError struct {
 }
 
 type Telegram struct {
+	sync.Mutex
 	Bot        *tgbotapi.BotAPI
 	Config     *Config
 	SendErrors []SendError

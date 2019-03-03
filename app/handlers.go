@@ -5,6 +5,7 @@ import (
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/labstack/echo"
 	"net/http"
+	"time"
 )
 
 func (app App) handlers() {
@@ -39,11 +40,17 @@ func (app App) handlers() {
 			return echo.NewHTTPError(400, "text is required")
 		}
 
-		go func() {
-			app.mutex.Lock()
-			defer app.mutex.Unlock()
-			tg.Bot.Send(tgbotapi.NewMessage(tg.Config.ChatId, text))
-		}()
+		go func(chatid int64, text string) {
+			if _, err := tg.Bot.Send(tgbotapi.NewMessage(chatid, text)); err != nil {
+				app.Telegram.Lock()
+				app.Telegram.SendErrors = append(app.Telegram.SendErrors, telegram.SendError{
+					Date: time.Now(),
+					Error: err,
+				})
+				app.Telegram.Unlock()
+			}
+
+		}(tg.Config.ChatId, text)
 
 		return ctx.JSON(200, map[string]string{
 			"message": "OK",
