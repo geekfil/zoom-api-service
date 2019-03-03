@@ -9,7 +9,7 @@ import (
 
 func Handler(w http.ResponseWriter, r *http.Request) {
 	err := di.Container.Invoke(func(app *app.App) {
-		app.Run()
+		app.Echo.ServeHTTP(w, r)
 	})
 	if err != nil {
 		log.Panicln(err)
