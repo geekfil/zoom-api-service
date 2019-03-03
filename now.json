@@ -10,7 +10,7 @@
     "project": "zoom-api-service",
     "builds": [
         {
-            "src": "how_handler.go",
+            "src": "now_handler.go",
             "use": "@now/go"
         }
     ],
