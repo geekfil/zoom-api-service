@@ -34,14 +34,12 @@ func (app *App) Run() {
 }
 
 func New(tg *telegram.Telegram, config *Config) *App {
-	workerJobs := worker.NewWorker(worker.WithLogger(worker.DefaultLogger))
-	go workerJobs.Run()
 	_echo := echo.New()
 	_app := &App{
 		_echo,
 		tg,
 		config,
-		workerJobs,
+		worker.NewWorker(worker.WithLogger(worker.DefaultLogger)),
 	}
 	_app.handlers()
 	return _app
