@@ -41,7 +41,9 @@ func (app App) httpHandler(http *echo.Group) {
 		if text = ctx.QueryParam("text"); len(text) == 0 {
 			return echo.NewHTTPError(400, "text is required")
 		}
-		go tg.Send(text)
+		if err := tg.Send(text); err != nil {
+			return echo.NewHTTPError(200, err)
+		}
 		return ctx.JSON(200, map[string]string{
 			"message": "Notification sent",
 		})
