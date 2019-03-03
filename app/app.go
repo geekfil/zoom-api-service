@@ -5,9 +5,8 @@ import (
 	"github.com/geekfil/zoom-api-service/telegram"
 	"github.com/geekfil/zoom-api-service/worker"
 	"github.com/labstack/echo"
+	"github.com/sevenNt/echo-pprof"
 	"log"
-	"net/http"
-	"net/http/pprof"
 )
 
 type Config struct {
@@ -35,17 +34,6 @@ func (app *App) Run() {
 	}
 }
 
-func (app *App) pprof() {
-	r := http.NewServeMux()
-	// Регистрация pprof-обработчиков
-	r.HandleFunc("debug/pprof/", pprof.Index)
-	r.HandleFunc("debug/pprof/cmdline", pprof.Cmdline)
-	r.HandleFunc("debug/pprof/profile", pprof.Profile)
-	r.HandleFunc("debug/pprof/symbol", pprof.Symbol)
-	r.HandleFunc("debug/pprof/trace", pprof.Trace)
-	app.Echo.GET("/*", echo.WrapHandler(r))
-}
-
 func New(tg *telegram.Telegram, config *Config) *App {
 	_echo := echo.New()
 	_app := &App{
@@ -54,7 +42,7 @@ func New(tg *telegram.Telegram, config *Config) *App {
 		config,
 		worker.NewWorker(worker.WithLogger(worker.DefaultLogger)),
 	}
-	_app.pprof()
+	echopprof.Wrap(_app.Echo)
 	_app.handlers()
 	return _app
 }
