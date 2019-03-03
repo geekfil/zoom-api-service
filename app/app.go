@@ -26,12 +26,6 @@ type App struct {
 }
 
 func (app *App) Run() {
-	app.Echo.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(ctx echo.Context) error {
-			ctx.Set("tg", app.Telegram)
-			return next(ctx)
-		}
-	})
 	if err := app.Echo.Start(":3000"); err != nil {
 		log.Panicln(err)
 	}
