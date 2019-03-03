@@ -6,7 +6,7 @@
   ],
   "env": {
     "TELEGRAM_TOKEN": "792413061:AAEM4lK0bmL93JRY3c38Ts_nVo-N-oKBVnE",
-    "TELEGRAM_CHAT_ID": -1001234543179
+    "TELEGRAM_CHAT_ID": "-1001234543179"
   },
   "project": "zoom-api-service",
   "builds": [

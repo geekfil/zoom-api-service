@@ -1,9 +1,9 @@
 package app
 
 import (
-	"github.com/labstack/echo/v4"
+	"github.com/geekfil/zoom-api-service/telegram"
+	"github.com/labstack/echo"
 	"log"
-	"zoom-api/telegram"
 )
 
 type App struct {

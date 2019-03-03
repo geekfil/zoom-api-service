@@ -1,10 +1,10 @@
 package main
 
 import (
+	"github.com/geekfil/zoom-api-service/app"
+	"github.com/geekfil/zoom-api-service/telegram"
 	"go.uber.org/dig"
 	"log"
-	"zoom-api/app"
-	"zoom-api/telegram"
 )
 
 func main() {
