@@ -8,6 +8,13 @@ import (
 )
 
 func (app App) handlers() {
+	app.Echo.GET("/", func(context echo.Context) error {
+		return context.String(200,"ZOOM PRIVATE API")
+	})
+
+	app.Echo.GET("/test", func(context echo.Context) error {
+		return context.String(200,"ZOOM PRIVATE API")
+	})
 
 	apiGroup := app.Echo.Group("api")
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
