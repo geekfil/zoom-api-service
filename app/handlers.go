@@ -39,8 +39,8 @@ func (app App) handlers() {
 			return echo.NewHTTPError(400, "text is required")
 		}
 		go func(chatId int64, text string) {
-			tg.Bot.Send(tgbotapi.NewMessage(chatId, text))
 			runtime.Gosched()
+			tg.Bot.Send(tgbotapi.NewMessage(chatId, text))
 		}(tg.Config.ChatId, text)
 
 		return ctx.JSON(200, map[string]string{
