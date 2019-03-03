@@ -65,5 +65,6 @@ func (t *Telegram) Send(text string) (*http.Response, error) {
 		})
 		return nil, err
 	}
-	return res, nil
+	resCopy := res
+	return resCopy, nil
 }
