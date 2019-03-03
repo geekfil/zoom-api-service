@@ -33,13 +33,15 @@ func (app *App) Run() {
 	}
 }
 
-func New(tg *telegram.Telegram, config *Config, worker *worker.Worker) *App {
+func New(tg *telegram.Telegram, config *Config) *App {
+	workerJobs := worker.NewWorker()
+	go workerJobs.Run()
 	_echo := echo.New()
 	_app := &App{
 		_echo,
 		tg,
 		config,
-		worker,
+		workerJobs,
 	}
 	_app.handlers()
 	return _app
