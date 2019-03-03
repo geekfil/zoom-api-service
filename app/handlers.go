@@ -33,16 +33,14 @@ func (app App) handlers() {
 	telegramGroup := apiGroup.Group("/telegram")
 
 	telegramGroup.GET("/send", func(ctx echo.Context) error {
+		defer runtime.Gosched()
 		var tg = ctx.Get("tg").(*telegram.Telegram)
 		var text string
 		if text = ctx.QueryParam("text"); len(text) == 0 {
 			return echo.NewHTTPError(400, "text is required")
 		}
 
-		go func() {
-			runtime.Gosched()
-			tg.Bot.Send(tgbotapi.NewMessage(tg.Config.ChatId, text))
-		}()
+		go tg.Bot.Send(tgbotapi.NewMessage(tg.Config.ChatId, text))
 
 		return ctx.JSON(200, map[string]string{
 			"message": "OK",
