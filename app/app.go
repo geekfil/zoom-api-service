@@ -39,6 +39,7 @@ func New(tg *telegram.Telegram, config *Config) *App {
 		_echo,
 		tg,
 		config,
+		sync.RWMutex{},
 	}
 	_app.handlers()
 	return _app
