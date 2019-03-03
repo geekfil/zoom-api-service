@@ -58,25 +58,23 @@ func (w *Worker) Run() {
 
 	for {
 		if len(w.jobs) > 0 {
-			go func() {
-				w.mu.Lock()
-				defer w.mu.Unlock()
-				lastIndex := len(w.jobs) - 1
-				currentJob := w.jobs[lastIndex]
+			w.mu.Lock()
+			lastIndex := len(w.jobs) - 1
+			currentJob := w.jobs[lastIndex]
 
-				if currentJob.currentAttempt < currentJob.attempts {
-					currentJob.currentAttempt++
-					w.log("Попытка [%d из %d] выполнения задачи [%s]", currentJob.currentAttempt, currentJob.attempts, currentJob.name)
-					if err := currentJob.handler(); err != nil {
-						w.log("Задача [%s] выполнена с ошибкой: %s", currentJob.name, err)
-						currentJob.errors = append(currentJob.errors, err.Error())
-					} else {
-						w.log("Задача [%s] выполнена успешно", currentJob.name)
-						w.jobs = w.jobs[:lastIndex]
-					}
+			if currentJob.currentAttempt < currentJob.attempts {
+				currentJob.currentAttempt++
+				w.log("Попытка [%d из %d] выполнения задачи [%s]", currentJob.currentAttempt, currentJob.attempts, currentJob.name)
+				if err := currentJob.handler(); err != nil {
+					w.log("Задача [%s] выполнена с ошибкой: %s", currentJob.name, err)
+					currentJob.errors = append(currentJob.errors, err.Error())
+				} else {
+					w.log("Задача [%s] выполнена успешно", currentJob.name)
+					w.jobs = w.jobs[:lastIndex]
 				}
-				runtime.Gosched()
-			}()
+			}
+			runtime.Gosched()
+			w.mu.Unlock()
 		}
 
 	}
