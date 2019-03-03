@@ -5,7 +5,12 @@ import (
 	"github.com/geekfil/zoom-api-service/di"
 	"log"
 	"net/http"
+	"runtime"
 )
+
+func init()  {
+	runtime.GOMAXPROCS(3)
+}
 
 func Handler(w http.ResponseWriter, r *http.Request) {
 	err := di.Container.Invoke(func(app *app.App) {
