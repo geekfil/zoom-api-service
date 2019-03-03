@@ -34,7 +34,7 @@ func (app *App) Run() {
 }
 
 func New(tg *telegram.Telegram, config *Config) *App {
-	workerJobs := worker.NewWorker()
+	workerJobs := worker.NewWorker(worker.WithLogger(worker.DefaultLogger))
 	go workerJobs.Run()
 	_echo := echo.New()
 	_app := &App{
