@@ -5,6 +5,7 @@ import (
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/labstack/echo"
 	"net/http"
+	"runtime"
 	"time"
 )
 
@@ -18,6 +19,14 @@ func (app App) handlers() {
 
 	app.Echo.GET("/", func(context echo.Context) error {
 		return context.String(200, "ZOOM PRIVATE API")
+	})
+
+	sysGroup := app.Echo.Group("/sys")
+	sysGroup.GET("/info", func(context echo.Context) error {
+		return context.JSON(200, echo.Map{
+			"NumGoroutine": runtime.NumGoroutine(),
+			"NumCPU": runtime.NumCPU(),
+		})
 	})
 
 	apiGroup := app.Echo.Group("/api")
@@ -44,11 +53,13 @@ func (app App) handlers() {
 			if _, err := tg.Bot.Send(tgbotapi.NewMessage(chatid, text)); err != nil {
 				app.Telegram.Lock()
 				app.Telegram.SendErrors = append(app.Telegram.SendErrors, telegram.SendError{
-					Date: time.Now(),
+					Date:  time.Now(),
 					Error: err,
 				})
 				app.Telegram.Unlock()
 			}
+
+			runtime.Gosched()
 
 		}(tg.Config.ChatId, text)
 
