@@ -21,4 +21,3 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		log.Panicln(err)
 	}
 }
-
