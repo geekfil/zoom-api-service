@@ -4,8 +4,8 @@
         "api.zoom.now.sh"
     ],
     "env": {
-        "TELEGRAM_TOKEN": "@TELEGRAM_TOKEN",
-        "TELEGRAM_CHAT_ID": "@TELEGRAM_CHAT_ID"
+        "TELEGRAM_TOKEN": "@telegram_token",
+        "TELEGRAM_CHAT_ID": "@telegram_chat_id"
     },
     "project": "zoom-api-service",
     "builds": [
