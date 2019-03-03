@@ -43,7 +43,7 @@ func (app *App) pprof() {
 	r.HandleFunc("/debug/pprof/profile", pprof.Profile)
 	r.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
 	r.HandleFunc("/debug/pprof/trace", pprof.Trace)
-	app.Echo.GET("", echo.WrapHandler(r))
+	app.Echo.GET("/*", echo.WrapHandler(r))
 }
 
 func New(tg *telegram.Telegram, config *Config) *App {
