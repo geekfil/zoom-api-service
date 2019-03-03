@@ -32,7 +32,6 @@ func (app *App) Run() {
 			return next(ctx)
 		}
 	})
-	app.handlers()
 	if err := app.Echo.Start(":3000"); err != nil {
 		log.Panicln(err)
 	}
@@ -45,5 +44,6 @@ func New(tg *telegram.Telegram, config *Config) *App {
 		tg,
 		config,
 	}
+	_app.handlers()
 	return _app
 }
