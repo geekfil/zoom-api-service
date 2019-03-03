@@ -1,21 +1,17 @@
 package telegram
 
 import (
-	"errors"
-	"fmt"
-	"io/ioutil"
+	"github.com/caarlos0/env"
+	"github.com/go-telegram-bot-api/telegram-bot-api"
+	"log"
 	"net/http"
-	"net/url"
-	"os"
 	"time"
 )
 
-const telegramApiEndpoint = "https://api.telegram.org/bot%s/%s"
-
 type Config struct {
-	ChatId  string
-	Token   string
-	Timeout time.Duration
+	ChatId  int64         `env:"CHAT_ID"`
+	Token   string        `env:"TELEGRAM_TOKEN"`
+	Timeout time.Duration `env:"TELEGRAM_CONNECT_TIMEOUT" envDefault:"3s"`
 }
 
 type SendError struct {
@@ -24,53 +20,31 @@ type SendError struct {
 }
 
 type Telegram struct {
-	config     *Config
+	Bot        *tgbotapi.BotAPI
+	Config     *Config
 	SendErrors []SendError
 }
 
 func NewConfig() *Config {
-	return &Config{
-		ChatId:  os.Getenv("TELEGRAM_CHAT_ID"),
-		Token:   os.Getenv("TELEGRAM_TOKEN"),
-		Timeout: time.Second * 3,
+	config := Config{}
+	if err := env.Parse(&config); err != nil {
+		log.Panicln(err)
 	}
+	return &config
 }
 
 func New(config *Config) *Telegram {
+	bot, err := tgbotapi.NewBotAPIWithClient(config.Token, &http.Client{
+		Timeout: config.Timeout,
+	})
+	if err != nil {
+		log.Panic(err)
+	}
 
 	return &Telegram{
-		config:     config,
+		Bot:        bot,
+		Config:     config,
 		SendErrors: []SendError{},
 	}
 }
 
-func (t *Telegram) Send(text string) (string, error) {
-	params := url.Values{}
-	params.Set("chat_id", t.config.ChatId)
-	params.Set("text", text)
-	var res *http.Response
-	var err error
-	if res, err = http.PostForm(fmt.Sprintf(telegramApiEndpoint, t.config.Token, "sendMessage"), params); err != nil {
-		t.SendErrors = append(t.SendErrors, SendError{
-			Date:  time.Now(),
-			Error: err,
-		})
-		return "", err
-	}
-	defer res.Body.Close()
-	data, err := ioutil.ReadAll(res.Body)
-	if res.StatusCode != 200 {
-		err = errors.New("Response status is " + res.Status)
-		t.SendErrors = append(t.SendErrors, SendError{
-			Date:  time.Now(),
-			Error: err,
-		})
-		return "", err
-	}
-
-	if err != nil {
-		return "", err
-	}
-
-	return string(data), nil
-}
