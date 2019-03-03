@@ -4,7 +4,20 @@ import (
 	"github.com/geekfil/zoom-api-service/telegram"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/labstack/echo"
+	"net/http"
 )
+
+func (app App) handlers() {
+	app.Echo.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(ctx echo.Context) error {
+			if app.Config.Token == ctx.QueryParam("token") {
+				return next(ctx)
+			}
+			return echo.NewHTTPError(http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+		}
+	})
+	groupTelegram(app.Echo.Group("/telegram"))
+}
 
 func groupTelegram(g *echo.Group) {
 	g.GET("/send", func(ctx echo.Context) error {
