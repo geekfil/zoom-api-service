@@ -46,7 +46,7 @@ func (config Config) httpClient() *http.Client {
 
 type SendError struct {
 	Date      time.Time `json:"date"`
-	Error     error     `json:"error"`
+	Error     string     `json:"error"`
 	TypeError string    `json:"type_error"`
 }
 
