@@ -16,9 +16,8 @@ func (app App) handlers() {
 	})
 
 	app.Echo.GET("/", func(context echo.Context) error {
-		return context.String(200,"ZOOM PRIVATE API")
+		return context.String(200, "ZOOM PRIVATE API")
 	})
-
 
 	apiGroup := app.Echo.Group("/api")
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
@@ -30,7 +29,6 @@ func (app App) handlers() {
 		}
 	})
 
-
 	telegramGroup := apiGroup.Group("/telegram")
 
 	telegramGroup.GET("/send", func(ctx echo.Context) error {
@@ -39,11 +37,15 @@ func (app App) handlers() {
 		if text = ctx.QueryParam("text"); len(text) == 0 {
 			return echo.NewHTTPError(400, "text is required")
 		}
-		if msg, err := tg.Bot.Send(tgbotapi.NewMessage(tg.Config.ChatId, text)); err != nil {
-			return echo.NewHTTPError(400, err)
-		} else {
-			return ctx.JSON(200, msg)
-		}
+		go tg.Bot.Send(tgbotapi.NewMessage(tg.Config.ChatId, text))
+		return ctx.JSON(200, map[string]string{
+			"message": "OK",
+		})
+		//if msg, err := tg.Bot.Send(tgbotapi.NewMessage(tg.Config.ChatId, text)); err != nil {
+		//	return echo.NewHTTPError(400, err)
+		//} else {
+		//	return ctx.JSON(200, msg)
+		//}
 
 	})
 	telegramGroup.GET("/send/errors", func(ctx echo.Context) error {
