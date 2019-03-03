@@ -79,11 +79,6 @@ func (app App) handlers() {
 		return ctx.JSON(200, map[string]string{
 			"message": "OK",
 		})
-		//if msg, err := tg.Bot.Send(tgbotapi.NewMessage(tg.Config.ChatId, text)); err != nil {
-		//	return echo.NewHTTPError(400, err)
-		//} else {
-		//	return ctx.JSON(200, msg)
-		//}
 
 	})
 	telegramGroup.GET("/send/errors", func(ctx echo.Context) error {
