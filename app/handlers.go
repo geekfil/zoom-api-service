@@ -5,6 +5,7 @@ import (
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/labstack/echo"
 	"net/http"
+	"reflect"
 	"runtime"
 	"time"
 )
@@ -25,7 +26,7 @@ func (app App) handlers() {
 	sysGroup.GET("/info", func(context echo.Context) error {
 		return context.JSON(200, echo.Map{
 			"NumGoroutine": runtime.NumGoroutine(),
-			"NumCPU": runtime.NumCPU(),
+			"NumCPU":       runtime.NumCPU(),
 		})
 	})
 
@@ -53,8 +54,9 @@ func (app App) handlers() {
 			if _, err := tg.Bot.Send(tgbotapi.NewMessage(chatid, text)); err != nil {
 				app.Telegram.Lock()
 				app.Telegram.SendErrors = append(app.Telegram.SendErrors, telegram.SendError{
-					Date:  time.Now(),
-					Error: err,
+					Date:      time.Now(),
+					Error:     err,
+					TypeError: reflect.TypeOf(err).String(),
 				})
 				app.Telegram.Unlock()
 			}

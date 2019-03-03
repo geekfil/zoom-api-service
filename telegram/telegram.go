@@ -45,8 +45,9 @@ func (config Config) httpClient() *http.Client {
 }
 
 type SendError struct {
-	Date  time.Time `json:"date"`
-	Error error     `json:"error"`
+	Date      time.Time `json:"date"`
+	Error     error     `json:"error"`
+	TypeError string    `json:"type_error"`
 }
 
 type Telegram struct {
