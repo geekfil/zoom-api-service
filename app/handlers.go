@@ -38,8 +38,11 @@ func (app App) handlers() {
 		if text = ctx.QueryParam("text"); len(text) == 0 {
 			return echo.NewHTTPError(400, "text is required")
 		}
-		go tg.Bot.Send(tgbotapi.NewMessage(tg.Config.ChatId, text))
-		runtime.Gosched()
+		go func(chatId int64, text string) {
+			tg.Bot.Send(tgbotapi.NewMessage(chatId, text))
+			runtime.Gosched()
+		}(tg.Config.ChatId, text)
+
 		return ctx.JSON(200, map[string]string{
 			"message": "OK",
 		})
