@@ -58,6 +58,7 @@ func (t *Telegram) Send(text string) (string, error) {
 		return "", err
 	}
 	defer res.Body.Close()
+	data, err := ioutil.ReadAll(res.Body)
 	if res.StatusCode != 200 {
 		err = errors.New("Response status is " + res.Status)
 		t.SendErrors = append(t.SendErrors, SendError{
@@ -66,7 +67,7 @@ func (t *Telegram) Send(text string) (string, error) {
 		})
 		return "", err
 	}
-	data, err := ioutil.ReadAll(res.Body)
+
 	if err != nil {
 		return "", err
 	}
