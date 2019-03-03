@@ -5,6 +5,7 @@ import (
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/labstack/echo"
 	"net/http"
+	"runtime"
 )
 
 func (app App) handlers() {
@@ -38,6 +39,7 @@ func (app App) handlers() {
 			return echo.NewHTTPError(400, "text is required")
 		}
 		go tg.Bot.Send(tgbotapi.NewMessage(tg.Config.ChatId, text))
+		runtime.Gosched()
 		return ctx.JSON(200, map[string]string{
 			"message": "OK",
 		})
