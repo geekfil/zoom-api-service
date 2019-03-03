@@ -9,7 +9,7 @@ import (
 
 func (app App) handlers() {
 
-	apiGroup := app.Echo.Group("/api")
+	apiGroup := app.Echo.Group("api")
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(ctx echo.Context) error {
 			if app.Config.Token == ctx.QueryParam("token") {

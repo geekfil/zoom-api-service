@@ -13,10 +13,7 @@
   "builds": [
     {
       "src": "now/handler.go",
-      "use": "@now/go",
-      "config": {
-        "maxLambdaSize": "15mb"
-      }
+      "use": "@now/go"
     }
   ],
   "routes": [
