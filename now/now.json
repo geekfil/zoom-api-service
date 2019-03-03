@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "name": "api-service",
+  "alias": [
+    "api.zoom.now.sh"
+  ],
+  "env": {
+    "TELEGRAM_TOKEN": "792413061:AAEM4lK0bmL93JRY3c38Ts_nVo-N-oKBVnE",
+    "TELEGRAM_CHAT_ID": -1001234543179
+  },
+  "project": "zoom-api-service",
+  "builds": [
+    {
+      "src": "*.go",
+      "use": "@now/go"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/*"
+    }
+  ]
+}

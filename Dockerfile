@@ -1,0 +1,13 @@
+FROM golang:1.12
+
+ENV GO111MODULE=on
+WORKDIR /go/src/app
+COPY . .
+
+RUN go get -d -v ./...
+RUN go install -v ./...
+
+ENV TELEGRAM_TOKEN "792413061:AAEM4lK0bmL93JRY3c38Ts_nVo-N-oKBVnE"
+ENV TELEGRAM_CHAT_ID -1001234543179
+EXPOSE 3000
+CMD ["zoom-api"]
