@@ -1,7 +1,7 @@
 {
   "version": 2,
   "alias": [
-    "api.zoom.now.sh"
+    "zoom-moda-api.now.sh"
   ],
   "env": {
     "TELEGRAM_TOKEN": "@telegram-token",

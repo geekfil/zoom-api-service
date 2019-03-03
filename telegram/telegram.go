@@ -43,7 +43,7 @@ func New(config *Config) *Telegram {
 	}
 }
 
-func (t *Telegram) Send(text string) error {
+func (t *Telegram) Send(text string) (*http.Response, error) {
 	params := url.Values{}
 	params.Set("chat_id", t.config.ChatId)
 	params.Set("text", text)
@@ -54,7 +54,7 @@ func (t *Telegram) Send(text string) error {
 			Date:  time.Now(),
 			Error: err,
 		})
-		return err
+		return nil, err
 	}
 	defer res.Body.Close()
 	if res.StatusCode != 200 {
@@ -63,7 +63,7 @@ func (t *Telegram) Send(text string) error {
 			Date:  time.Now(),
 			Error: err,
 		})
-		return err
+		return nil, err
 	}
-	return nil
+	return res, nil
 }

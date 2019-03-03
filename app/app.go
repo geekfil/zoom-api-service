@@ -3,6 +3,7 @@ package app
 import (
 	"github.com/geekfil/zoom-api-service/telegram"
 	"github.com/labstack/echo"
+	"io/ioutil"
 	"log"
 )
 
@@ -41,12 +42,15 @@ func (app App) httpHandler(http *echo.Group) {
 		if text = ctx.QueryParam("text"); len(text) == 0 {
 			return echo.NewHTTPError(400, "text is required")
 		}
-		if err := tg.Send(text); err != nil {
+		if res, err := tg.Send(text); err != nil {
 			return echo.NewHTTPError(200, err)
+		} else {
+			msg, _ := ioutil.ReadAll(res.Body)
+			return ctx.JSON(200, map[string]string{
+				"message": string(msg),
+			})
 		}
-		return ctx.JSON(200, map[string]string{
-			"message": "Notification sent",
-		})
+
 	})
 	httpTelegram.GET("/send/errors", func(ctx echo.Context) error {
 		var tg = ctx.Get("tg").(*telegram.Telegram)
