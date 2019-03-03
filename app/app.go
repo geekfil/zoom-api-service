@@ -38,12 +38,12 @@ func (app *App) Run() {
 func (app *App) pprof() {
 	r := http.NewServeMux()
 	// Регистрация pprof-обработчиков
-	r.HandleFunc("/debug/pprof/", pprof.Index)
-	r.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-	r.HandleFunc("/debug/pprof/profile", pprof.Profile)
-	r.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-	r.HandleFunc("/debug/pprof/trace", pprof.Trace)
-	app.Echo.GET("/pprof", echo.WrapHandler(r))
+	r.HandleFunc("/pprof/", pprof.Index)
+	r.HandleFunc("/pprof/cmdline", pprof.Cmdline)
+	r.HandleFunc("/pprof/profile", pprof.Profile)
+	r.HandleFunc("/pprof/symbol", pprof.Symbol)
+	r.HandleFunc("/pprof/trace", pprof.Trace)
+	app.Echo.GET("/debug", echo.WrapHandler(r))
 }
 
 func New(tg *telegram.Telegram, config *Config) *App {
