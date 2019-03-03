@@ -19,6 +19,30 @@ type Config struct {
 	Proxy   string        `env:"TELEGRAM_PROXY"`
 }
 
+func (config Config) httpClient() *http.Client {
+	if config.Proxy != "" {
+		proxyUrl, err := url.Parse(config.Proxy)
+		if err != nil {
+			log.Panicln(err)
+		}
+		dialer, err := proxy.FromURL(proxyUrl, proxy.Direct)
+		if err != nil {
+			log.Panicln(err)
+		}
+
+		return &http.Client{
+			Timeout: config.Timeout,
+			Transport: &http.Transport{
+				DialContext: func(ctx context.Context, network, addr string) (conn net.Conn, e error) {
+					return dialer.Dial(network, addr)
+				},
+			},
+		}
+	} else {
+		return &http.Client{Transport: http.DefaultTransport}
+	}
+}
+
 type SendError struct {
 	Date  time.Time `json:"date"`
 	Error error     `json:"error"`
@@ -39,22 +63,8 @@ func NewConfig() *Config {
 }
 
 func New(config *Config) *Telegram {
-	proxyUrl, err := url.Parse(config.Proxy)
-	if err != nil {
-		log.Panicln(err)
-	}
-	dialer, err := proxy.FromURL(proxyUrl, proxy.Direct)
-	if err != nil {
-		log.Panicln(err)
-	}
-	bot, err := tgbotapi.NewBotAPIWithClient(config.Token, &http.Client{
-		Timeout: config.Timeout,
-		Transport: &http.Transport{
-			DialContext: func(ctx context.Context, network, addr string) (conn net.Conn, e error) {
-				return dialer.Dial(network, addr)
-			},
-		},
-	})
+
+	bot, err := tgbotapi.NewBotAPIWithClient(config.Token, config.httpClient())
 	if err != nil {
 		log.Panic(err)
 	}
