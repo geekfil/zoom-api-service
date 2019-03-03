@@ -39,7 +39,7 @@ func (config Config) httpClient() *http.Client {
 			},
 		}
 	} else {
-		return &http.Client{Transport: http.DefaultTransport}
+		return &http.Client{Transport: http.DefaultTransport, Timeout: config.Timeout}
 	}
 }
 
