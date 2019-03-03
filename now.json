@@ -1,23 +1,23 @@
 {
-    "version": 2,
-    "alias": [
-        "api.zoom.now.sh"
-    ],
-    "env": {
-        "TELEGRAM_TOKEN": "@telegram-token",
-        "TELEGRAM_CHAT_ID": "-1001234543179"
-    },
-    "project": "zoom-api-service",
-    "builds": [
-        {
-            "src": "now_handler.go",
-            "use": "@now/go"
-        }
-    ],
-    "routes": [
-        {
-            "src": "/(.*)",
-            "dest": "/how_handler.go"
-        }
-    ]
+  "version": 2,
+  "alias": [
+    "api.zoom.now.sh"
+  ],
+  "env": {
+    "TELEGRAM_TOKEN": "@telegram-token",
+    "TELEGRAM_CHAT_ID": "-1001234543179"
+  },
+  "project": "zoom-api-service",
+  "builds": [
+    {
+      "src": "now/handler.go",
+      "use": "@now/go"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/now/handler.go"
+    }
+  ]
 }
