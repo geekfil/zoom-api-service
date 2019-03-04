@@ -5,7 +5,6 @@ import (
 	"github.com/geekfil/zoom-api-service/worker"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/labstack/echo"
-	"github.com/pkg/errors"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -117,6 +116,6 @@ func webTelegramBot(g *echo.Group) {
 	//	})
 	//})
 	g.GET("/test", func(ctx echo.Context) error {
-		return ctx.JSON(200,ctx.Request())
+		return ctx.JSON(200, ctx.Request())
 	})
 }
