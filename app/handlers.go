@@ -5,6 +5,7 @@ import (
 	"github.com/geekfil/zoom-api-service/worker"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/labstack/echo"
+	"github.com/pkg/errors"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -105,21 +106,17 @@ func webSys(g *echo.Group) {
 }
 
 func webTelegramBot(g *echo.Group) {
-	//g.GET("/setwebhook", func(ctx echo.Context) error {
-	//	tg := ctx.Get("tg").(*telegram.Telegram)
-	//	url := ctx.Request().URL.String()
-	//	if _, err := tg.Bot.SetWebhook(tgbotapi.NewWebhook("/telegram/bot/webhook")); err != nil {
-	//		return echo.NewHTTPError(400, errors.Wrap(err, "Tg.Bot.SetWebhook"))
-	//	}
-	//	return ctx.JSON(200, echo.Map{
-	//		"message": "OK",
-	//	})
-	//})
-	g.GET("/test", func(ctx echo.Context) error {
+	g.GET("/setwebhook", func(ctx echo.Context) error {
+		tg := ctx.Get("tg").(*telegram.Telegram)
+		url := ctx.Request().URL.String()
+		if _, err := tg.Bot.SetWebhook(tgbotapi.NewWebhook("/telegram/bot/webhook")); err != nil {
+			return echo.NewHTTPError(400, errors.Wrap(err, "Tg.Bot.SetWebhook"))
+		}
 		return ctx.JSON(200, echo.Map{
-			"ctx.Request().URL.String()": ctx.Request().URL.String(),
-			"ctx.Request().Host":              ctx.Request().Host,
-			"ctx.Scheme()":               ctx.Scheme(),
+			"message": "OK",
 		})
+	})
+	g.GET("/test", func(ctx echo.Context) error {
+		return ctx.JSON(200,ctx.Request())
 	})
 }
