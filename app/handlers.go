@@ -13,9 +13,8 @@ import (
 )
 
 func (app App) handlers() {
-	telegramBot(app.Echo.Group("/telegram/bot"))
-
-	app.Echo.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+	web := app.Echo
+	web.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(ctx echo.Context) error {
 			ctx.Set("tg", app.Telegram)
 			ctx.Set("worker", app.worker)
@@ -23,19 +22,15 @@ func (app App) handlers() {
 		}
 	})
 
-	app.Echo.GET("/", func(context echo.Context) error {
+	webTelegramBot(web.Group("/telegram/bot"))
+
+	web.GET("/", func(context echo.Context) error {
 		return context.String(200, "ZOOM PRIVATE API")
 	})
 
-	sysGroup := app.Echo.Group("/sys")
-	sysGroup.GET("/info", func(context echo.Context) error {
-		return context.JSON(200, echo.Map{
-			"NumGoroutine": runtime.NumGoroutine(),
-			"NumCPU":       runtime.NumCPU(),
-		})
-	})
+	webSys(web.Group("/sys"))
 
-	apiGroup := app.Echo.Group("/api")
+	apiGroup := web.Group("/api")
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(ctx echo.Context) error {
 			if app.Config.Token == ctx.QueryParam("token") {
@@ -44,8 +39,12 @@ func (app App) handlers() {
 			return echo.NewHTTPError(http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 		}
 	})
+	webApi(apiGroup)
 
-	telegramGroup := apiGroup.Group("/telegram")
+}
+
+func webApi(group *echo.Group) {
+	telegramGroup := group.Group("/telegram")
 
 	telegramGroup.GET("/send", func(ctx echo.Context) error {
 
@@ -57,9 +56,9 @@ func (app App) handlers() {
 		}
 
 		workerJob.AddJob("Отправка уведомления в Telegram", func() error {
-			if _, err := tg.Bot.Send(tgbotapi.NewMessage(app.Telegram.Config.ChatId, text)); err != nil {
-				app.Telegram.Lock()
-				app.Telegram.SendErrors = append(app.Telegram.SendErrors, telegram.SendError{
+			if _, err := tg.Bot.Send(tgbotapi.NewMessage(tg.Config.ChatId, text)); err != nil {
+				tg.Lock()
+				tg.SendErrors = append(tg.SendErrors, telegram.SendError{
 					Date: time.Now(),
 					Error: func(err error) string {
 						switch e := err.(type) {
@@ -71,7 +70,7 @@ func (app App) handlers() {
 					}(err),
 					TypeError: reflect.TypeOf(err).String(),
 				})
-				app.Telegram.Unlock()
+				tg.Unlock()
 				return err
 			}
 
@@ -96,7 +95,16 @@ func (app App) handlers() {
 	})
 }
 
-func telegramBot(g *echo.Group) {
+func webSys(g *echo.Group) {
+	g.GET("/info", func(context echo.Context) error {
+		return context.JSON(200, echo.Map{
+			"NumGoroutine": runtime.NumGoroutine(),
+			"NumCPU":       runtime.NumCPU(),
+		})
+	})
+}
+
+func webTelegramBot(g *echo.Group) {
 	//g.GET("/setwebhook", func(ctx echo.Context) error {
 	//	tg := ctx.Get("tg").(*telegram.Telegram)
 	//	url := ctx.Request().URL.String()
@@ -110,8 +118,8 @@ func telegramBot(g *echo.Group) {
 	g.GET("/test", func(ctx echo.Context) error {
 		return ctx.JSON(200, echo.Map{
 			"ctx.Request().URL.String()": ctx.Request().URL.String(),
-			"ctx.Request()": ctx.Request(),
-			"ctx.Scheme()": ctx.Scheme(),
+			"ctx.Request()":              ctx.Request(),
+			"ctx.Scheme()":               ctx.Scheme(),
 		})
 	})
 }
