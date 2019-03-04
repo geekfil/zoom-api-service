@@ -90,7 +90,7 @@ func (t *Telegram) RunBot() error {
 		return errors.Wrap(err, "Run.GetUpdatesChan")
 	}
 	for update := range updateCh {
-		if update.Message == nil || update.Message.IsCommand() {
+		if update.Message == nil || !update.Message.IsCommand() {
 			continue
 		}
 
