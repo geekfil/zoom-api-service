@@ -9,11 +9,12 @@ import (
 
 type JobHandler func() error
 type Job struct {
-	name           string
+	Name           string
 	handler        JobHandler
 	attempts       uint
 	currentAttempt uint
-	errors         []string
+	Errors         []string
+	Done           chan bool
 }
 type Worker struct {
 	mu     sync.Mutex
@@ -21,11 +22,11 @@ type Worker struct {
 	logger *log.Logger
 }
 
-var DefaultLogger = log.New(os.Stdout, "Worker Jobs: ", log.LstdFlags)
+var DefaultLogger = log.New(os.Stdout, "Worker Jobs: ", log.LstdFlags|log.Lmicroseconds)
 
 func NewWorker(opts ...OptionFunc) *Worker {
 	worker := &Worker{
-		jobs: make(chan *Job, 0),
+		jobs: make(chan *Job, 100),
 	}
 	for _, opt := range opts {
 		if err := opt(worker); err != nil {
@@ -36,27 +37,35 @@ func NewWorker(opts ...OptionFunc) *Worker {
 	return worker
 }
 
-func (w *Worker) AddJob(name string, handler JobHandler, attempts uint) {
+func (w *Worker) AddJob(name string, handler JobHandler, attempts uint) *Job {
 	w.log("Добавлена задача [%s]", name)
-	w.jobs <- &Job{
+	done := make(chan bool)
+	job := &Job{
 		name,
 		handler,
 		attempts,
 		0,
 		make([]string, 0),
+		done,
 	}
+	w.jobs <- job
+	return job
 }
 
 func (w *Worker) handleJob(job *Job) {
 	if job.currentAttempt < job.attempts {
 		job.currentAttempt++
-		w.log("Попытка [%d из %d] выполнения задачи [%s]", job.currentAttempt, job.attempts, job.name)
+		w.log("Попытка [%d из %d] выполнения задачи [%s]", job.currentAttempt, job.attempts, job.Name)
 		if err := job.handler(); err != nil {
-			w.log("Задача [%s] выполнена с ошибкой: %s", job.name, err)
-			job.errors = append(job.errors, err.Error())
+			w.log("Задача [%s] выполнена с ошибкой: %s", job.Name, err)
+			job.Errors = append(job.Errors, err.Error())
 			w.jobs <- job
+			if job.currentAttempt == job.attempts {
+				job.Done <- false
+			}
 		} else {
-			w.log("Задача [%s] выполнена успешно", job.name)
+			job.Done <- true
+			w.log("Задача [%s] выполнена успешно", job.Name)
 		}
 	}
 	runtime.Gosched()
