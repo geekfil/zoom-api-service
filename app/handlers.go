@@ -106,16 +106,16 @@ func webSys(g *echo.Group) {
 }
 
 func webTelegramBot(g *echo.Group) {
-	g.GET("/setwebhook", func(ctx echo.Context) error {
-		tg := ctx.Get("tg").(*telegram.Telegram)
-		url := ctx.Request().URL.String()
-		if _, err := tg.Bot.SetWebhook(tgbotapi.NewWebhook("/telegram/bot/webhook")); err != nil {
-			return echo.NewHTTPError(400, errors.Wrap(err, "Tg.Bot.SetWebhook"))
-		}
-		return ctx.JSON(200, echo.Map{
-			"message": "OK",
-		})
-	})
+	//g.GET("/setwebhook", func(ctx echo.Context) error {
+	//	tg := ctx.Get("tg").(*telegram.Telegram)
+	//	url := ctx.Request().URL.String()
+	//	if _, err := tg.Bot.SetWebhook(tgbotapi.NewWebhook("/telegram/bot/webhook")); err != nil {
+	//		return echo.NewHTTPError(400, errors.Wrap(err, "Tg.Bot.SetWebhook"))
+	//	}
+	//	return ctx.JSON(200, echo.Map{
+	//		"message": "OK",
+	//	})
+	//})
 	g.GET("/test", func(ctx echo.Context) error {
 		return ctx.JSON(200,ctx.Request())
 	})
