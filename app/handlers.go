@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/geekfil/zoom-api-service/telegram"
 	"github.com/geekfil/zoom-api-service/worker"
@@ -124,6 +125,28 @@ func webTelegramBot(g *echo.Group) {
 		})
 	})
 	g.Any("/webhook", func(ctx echo.Context) error {
+		tg := ctx.Get("tg").(*telegram.Telegram)
+
+		var update tgbotapi.Update
+		if err := json.NewDecoder(ctx.Request().Body).Decode(&update); err != nil {
+			return echo.NewHTTPError(500, errors.Wrap(err, "Ошибка декодирования тела запроса"))
+		}
+
+		if update.Message == nil || update.Message.IsCommand() {
+			return echo.NewHTTPError(500, "Сообщение пустое или не является коммандой")
+		}
+
+		var err error
+		switch update.Message.Command() {
+		case "start":
+			_, err = tg.Bot.Send(tg.Cmd.Start(update))
+		default:
+			_, err = tg.Bot.Send(tg.Cmd.Default(update))
+		}
+
+		if err != nil {
+			return echo.NewHTTPError(500, errors.Wrap(err, "Ошибка выполнения команды telegram"))
+		}
 		return ctx.NoContent(200)
 	})
 }

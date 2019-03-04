@@ -97,9 +97,9 @@ func (t *Telegram) RunBot() error {
 		var err error
 		switch update.Message.Command() {
 		case "start":
-			_, err = t.Bot.Send(t.Cmd.cmdStart(update))
+			_, err = t.Bot.Send(t.Cmd.Start(update))
 		default:
-			_, err = t.Bot.Send(t.Cmd.cmdDefault(update))
+			_, err = t.Bot.Send(t.Cmd.Default(update))
 		}
 
 		if err != nil {
@@ -111,10 +111,10 @@ func (t *Telegram) RunBot() error {
 	return nil
 }
 
-func (b Cmd) cmdStart(update tgbotapi.Update) tgbotapi.Chattable {
+func (b Cmd) Start(update tgbotapi.Update) tgbotapi.Chattable {
 	return tgbotapi.NewMessage(update.Message.Chat.ID, "Start")
 }
 
-func (b Cmd) cmdDefault(update tgbotapi.Update) tgbotapi.Chattable {
+func (b Cmd) Default(update tgbotapi.Update) tgbotapi.Chattable {
 	return tgbotapi.NewMessage(update.Message.Chat.ID, "Default")
 }
