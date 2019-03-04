@@ -5,8 +5,8 @@ import (
 	"github.com/geekfil/zoom-api-service/telegram"
 	"github.com/geekfil/zoom-api-service/worker"
 	"github.com/labstack/echo"
-	"github.com/sevenNt/echo-pprof"
 	"log"
+	_ "net/http/pprof"
 )
 
 type Config struct {
@@ -42,7 +42,6 @@ func New(tg *telegram.Telegram, config *Config) *App {
 		config,
 		worker.NewWorker(worker.WithLogger(worker.DefaultLogger)),
 	}
-	echopprof.Wrap(_app.Echo)
 	_app.handlers()
 	return _app
 }
