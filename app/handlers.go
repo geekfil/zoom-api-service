@@ -8,6 +8,7 @@ import (
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/labstack/echo"
 	"github.com/pkg/errors"
+	"log"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -143,6 +144,8 @@ func webTelegramBot(g *echo.Group) {
 		default:
 			_, err = tg.Bot.Send(tg.Cmd.Default(update))
 		}
+
+		log.Println(update.Message.Command())
 
 		if err != nil {
 			return echo.NewHTTPError(500, errors.Wrap(err, "Ошибка выполнения команды telegram"))

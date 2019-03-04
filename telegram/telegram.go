@@ -101,10 +101,6 @@ func (t *Telegram) RunBot() error {
 		default:
 			_, err = t.Bot.Send(t.Cmd.Default(update))
 		}
-
-
-
-
 		if err != nil {
 			log.Println(err)
 		}
