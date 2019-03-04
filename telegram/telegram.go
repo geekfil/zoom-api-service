@@ -85,7 +85,6 @@ func New(config *Config) *Telegram {
 }
 
 func (t *Telegram) RunBot() error {
-	t.Bot.GetUpdatesChan()
 	updateCh, err := t.Bot.GetUpdatesChan(tgbotapi.UpdateConfig{Offset: 0, Timeout: 60})
 	if err != nil {
 		return errors.Wrap(err, "Run.GetUpdatesChan")
