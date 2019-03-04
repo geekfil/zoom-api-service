@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/caarlos0/env"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/pkg/errors"
 	"golang.org/x/net/proxy"
 	"log"
 	"net"
@@ -46,12 +47,16 @@ func (config Config) httpClient() *http.Client {
 
 type SendError struct {
 	Date      time.Time `json:"date"`
-	Error     string     `json:"error"`
+	Error     string    `json:"error"`
 	TypeError string    `json:"type_error"`
+}
+
+type Cmd struct {
 }
 
 type Telegram struct {
 	sync.Mutex
+	Cmd        Cmd
 	Bot        *tgbotapi.BotAPI
 	Config     *Config
 	SendErrors []SendError
@@ -77,4 +82,40 @@ func New(config *Config) *Telegram {
 		Config:     config,
 		SendErrors: []SendError{},
 	}
+}
+
+func (t *Telegram) RunBot() error {
+	t.Bot.GetUpdatesChan()
+	updateCh, err := t.Bot.GetUpdatesChan(tgbotapi.UpdateConfig{Offset: 0, Timeout: 60})
+	if err != nil {
+		return errors.Wrap(err, "Run.GetUpdatesChan")
+	}
+	for update := range updateCh {
+		if update.Message == nil || update.Message.IsCommand() {
+			continue
+		}
+
+		var err error
+		switch update.Message.Command() {
+		case "start":
+			_, err = t.Bot.Send(t.Cmd.cmdStart(update))
+		default:
+			_, err = t.Bot.Send(t.Cmd.cmdDefault(update))
+		}
+
+		if err != nil {
+			log.Println(err)
+		}
+
+	}
+
+	return nil
+}
+
+func (b Cmd) cmdStart(update tgbotapi.Update) tgbotapi.Chattable {
+	return tgbotapi.NewMessage(update.Message.Chat.ID, "Start")
+}
+
+func (b Cmd) cmdDefault(update tgbotapi.Update) tgbotapi.Chattable {
+	return tgbotapi.NewMessage(update.Message.Chat.ID, "Default")
 }

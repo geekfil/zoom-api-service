@@ -13,6 +13,8 @@ import (
 )
 
 func (app App) handlers() {
+	telegramBot(app.Echo.Group("/telegram/bot"))
+
 	app.Echo.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(ctx echo.Context) error {
 			ctx.Set("tg", app.Telegram)
@@ -90,6 +92,26 @@ func (app App) handlers() {
 		tg.SendErrors = []telegram.SendError{}
 		return ctx.JSON(200, map[string]string{
 			"message": "OK",
+		})
+	})
+}
+
+func telegramBot(g *echo.Group) {
+	//g.GET("/setwebhook", func(ctx echo.Context) error {
+	//	tg := ctx.Get("tg").(*telegram.Telegram)
+	//	url := ctx.Request().URL.String()
+	//	if _, err := tg.Bot.SetWebhook(tgbotapi.NewWebhook("/telegram/bot/webhook")); err != nil {
+	//		return echo.NewHTTPError(400, errors.Wrap(err, "Tg.Bot.SetWebhook"))
+	//	}
+	//	return ctx.JSON(200, echo.Map{
+	//		"message": "OK",
+	//	})
+	//})
+	g.GET("/test", func(ctx echo.Context) error {
+		return ctx.JSON(200, echo.Map{
+			"ctx.Request().URL.String()": ctx.Request().URL.String(),
+			"ctx.Request()": ctx.Request(),
+			"ctx.Scheme()": ctx.Scheme(),
 		})
 	})
 }
