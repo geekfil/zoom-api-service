@@ -117,7 +117,9 @@ func webTelegramBot(g *echo.Group) {
 	//})
 	g.GET("/test", func(ctx echo.Context) error {
 		return ctx.JSON(200, echo.Map{
-			"test":"test",
+			"ctx.Request().URL.String()": ctx.Request().URL.String(),
+			"ctx.Request().Host":              ctx.Request().Host,
+			"ctx.Scheme()":               ctx.Scheme(),
 		})
 	})
 }
