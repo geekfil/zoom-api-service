@@ -4,6 +4,7 @@ import (
 	"github.com/geekfil/zoom-api-service/telegram"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -13,6 +14,7 @@ import (
 
 func (app App) handlers() {
 	web := app.Echo
+	web.Use(middleware.Logger())
 	web.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(ctx echo.Context) error {
 			ctx.Set("tg", app.Telegram)

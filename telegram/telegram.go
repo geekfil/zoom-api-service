@@ -103,6 +103,7 @@ func (t Telegram) CmdJobs(update tgbotapi.Update, worker *worker.Worker) tgbotap
 	for job := range worker.Jobs() {
 		text.WriteString(fmt.Sprintf("Задача *%s*", job.Name))
 		text.WriteString(fmt.Sprintf("Попытки выполнения %d из %d \r\n", job.CurrentAttempt, job.Attempts))
+		text.WriteString(strings.Repeat("-", 5))
 	}
 
 	return tgbotapi.NewMessage(update.Message.Chat.ID, text.String())
