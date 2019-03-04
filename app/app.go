@@ -6,7 +6,6 @@ import (
 	"github.com/geekfil/zoom-api-service/worker"
 	"github.com/labstack/echo"
 	"log"
-	_ "net/http/pprof"
 )
 
 type Config struct {
