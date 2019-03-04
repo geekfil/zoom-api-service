@@ -1,12 +1,9 @@
 package app
 
 import (
-	"fmt"
 	"github.com/geekfil/zoom-api-service/telegram"
-	"github.com/geekfil/zoom-api-service/worker"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/labstack/echo"
-	"github.com/pkg/errors"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -19,18 +16,18 @@ func (app App) handlers() {
 	web.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(ctx echo.Context) error {
 			ctx.Set("tg", app.Telegram)
-			ctx.Set("worker", app.worker)
+			ctx.Set("worker", app.Worker)
 			return next(ctx)
 		}
 	})
 
-	webTelegramBot(web.Group("/telegram/bot"))
+	app.handlerTelegramBot(web.Group("/telegram/bot"))
 
 	web.GET("/", func(context echo.Context) error {
 		return context.String(200, "ZOOM PRIVATE API")
 	})
 
-	webSys(web.Group("/sys"))
+	app.handlerWebSys(web.Group("/sys"))
 
 	apiGroup := web.Group("/api")
 	apiGroup.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
@@ -41,26 +38,24 @@ func (app App) handlers() {
 			return echo.NewHTTPError(http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
 		}
 	})
-	webApi(apiGroup)
+	app.handlerWebApi(apiGroup)
 
 }
 
-func webApi(group *echo.Group) {
+func (app *App) handlerWebApi(group *echo.Group) {
 	telegramGroup := group.Group("/telegram")
 
 	telegramGroup.GET("/send", func(ctx echo.Context) error {
 
-		var tg = ctx.Get("tg").(*telegram.Telegram)
-		var workerJob = ctx.Get("worker").(*worker.Worker)
 		var text string
 		if text = ctx.QueryParam("text"); len(text) == 0 {
 			return echo.NewHTTPError(400, "text is required")
 		}
 
-		workerJob.AddJob("Отправка уведомления в Telegram", func() error {
-			if _, err := tg.Bot.Send(tgbotapi.NewMessage(tg.Config.ChatId, text)); err != nil {
-				tg.Lock()
-				tg.SendErrors = append(tg.SendErrors, telegram.SendError{
+		app.Worker.AddJob("Отправка уведомления в Telegram", func() error {
+			if _, err := app.Telegram.Bot.Send(tgbotapi.NewMessage(app.Telegram.Config.ChatId, text)); err != nil {
+				app.Telegram.Lock()
+				app.Telegram.SendErrors = append(app.Telegram.SendErrors, telegram.SendError{
 					Date: time.Now(),
 					Error: func(err error) string {
 						switch e := err.(type) {
@@ -72,7 +67,7 @@ func webApi(group *echo.Group) {
 					}(err),
 					TypeError: reflect.TypeOf(err).String(),
 				})
-				tg.Unlock()
+				app.Telegram.Unlock()
 				return err
 			}
 
@@ -97,38 +92,11 @@ func webApi(group *echo.Group) {
 	})
 }
 
-func webSys(g *echo.Group) {
+func (app *App) handlerWebSys(g *echo.Group) {
 	g.GET("/info", func(context echo.Context) error {
 		return context.JSON(200, echo.Map{
 			"NumGoroutine": runtime.NumGoroutine(),
 			"NumCPU":       runtime.NumCPU(),
 		})
-	})
-}
-
-func webTelegramBot(g *echo.Group) {
-	g.GET("/setwebhook", func(ctx echo.Context) error {
-		tg := ctx.Get("tg").(*telegram.Telegram)
-		webhookUrl, err := url.Parse(fmt.Sprint(ctx.Scheme(), "://", ctx.Request().Host, "/telegram/bot/webhook"))
-		if err != nil {
-			return echo.NewHTTPError(500, err)
-		}
-
-		_, err = tg.Bot.SetWebhook(tgbotapi.WebhookConfig{URL: webhookUrl})
-		if err != nil {
-			return echo.NewHTTPError(400, errors.Wrap(err, "Tg.Bot.SetWebhook"))
-		}
-
-		return ctx.JSON(200, echo.Map{
-			"message": "OK",
-		})
-	})
-	g.Any("/webhook", func(ctx echo.Context) error {
-		tg := ctx.Get("tg").(*telegram.Telegram)
-		if err := tg.HandleWebhook(ctx.Request().Body); err != nil {
-			return echo.NewHTTPError(200, errors.Wrap(err, "Webhook error"))
-		}
-
-		return ctx.NoContent(200)
 	})
 }

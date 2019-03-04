@@ -24,7 +24,7 @@ type App struct {
 	Echo     *echo.Echo
 	Telegram *telegram.Telegram
 	Config   *Config
-	worker   *worker.Worker
+	Worker   *worker.Worker
 }
 
 func (app *App) Run() {
