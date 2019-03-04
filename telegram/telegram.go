@@ -2,10 +2,13 @@ package telegram
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/caarlos0/env"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/labstack/echo"
 	"github.com/pkg/errors"
 	"golang.org/x/net/proxy"
+	"io"
 	"log"
 	"net"
 	"net/http"
@@ -99,7 +102,7 @@ func (t *Telegram) RunBot() error {
 		case "start":
 			_, err = t.Bot.Send(t.Cmd.Start(update))
 		default:
-			_, err = t.Bot.Send(t.Cmd.Default(update))
+			_, err = t.Bot.Send(t.Cmd.Help(update))
 		}
 		if err != nil {
 			log.Println(err)
@@ -110,10 +113,46 @@ func (t *Telegram) RunBot() error {
 	return nil
 }
 
+func (t *Telegram) HandleWebhook(body io.ReadCloser) error {
+	var update tgbotapi.Update
+	if err := json.NewDecoder(body).Decode(&update); err != nil {
+		return errors.Wrap(err, "Ошибка декодирования тела запроса")
+	}
+
+	if update.Message == nil || !update.Message.IsCommand() {
+		return errors.New("Сообщение пустое или не является коммандой")
+	}
+	var err error
+	switch update.Message.Command() {
+	case "start":
+		_, err = t.Bot.Send(t.Cmd.Start(update))
+	case "help":
+		_, err = t.Bot.Send(t.Cmd.Help(update))
+	default:
+		_, err = t.Bot.Send(t.Cmd.Default(update))
+	}
+
+	if err != nil {
+		return echo.NewHTTPError(500, errors.Wrap(err, "Ошибка выполнения команды telegram"))
+	}
+
+	return nil
+}
+
 func (b Cmd) Start(update tgbotapi.Update) tgbotapi.Chattable {
-	return tgbotapi.NewMessage(update.Message.Chat.ID, "Start")
+	return tgbotapi.NewMessage(update.Message.Chat.ID, "Отправьте /help для получения справки")
+}
+
+func (b Cmd) Help(update tgbotapi.Update) tgbotapi.Chattable {
+	var text = `
+/help - справка по командам
+/jobs - текущие задачи планировщика
+/goroutines - количество работающих горутин
+/cpu - количество ядер процессора
+`
+	return tgbotapi.NewMessage(update.Message.Chat.ID, text)
 }
 
 func (b Cmd) Default(update tgbotapi.Update) tgbotapi.Chattable {
-	return tgbotapi.NewMessage(update.Message.Chat.ID, "Default")
+	return tgbotapi.NewMessage(update.Message.Chat.ID, "Неизвестная команда. Отправьте /help для получения справки")
 }
