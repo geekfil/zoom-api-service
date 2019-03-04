@@ -54,7 +54,7 @@ func (app App) handlers() {
 			return echo.NewHTTPError(400, "text is required")
 		}
 
-		job := workerJob.AddJob("Отправка уведомления в Telegram", func() error {
+		workerJob.AddJob("Отправка уведомления в Telegram", func() error {
 			if _, err := tg.Bot.Send(tgbotapi.NewMessage(app.Telegram.Config.ChatId, text)); err != nil {
 				app.Telegram.Lock()
 				app.Telegram.SendErrors = append(app.Telegram.SendErrors, telegram.SendError{
