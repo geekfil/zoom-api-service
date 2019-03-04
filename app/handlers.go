@@ -144,6 +144,7 @@ func webTelegramBot(g *echo.Group) {
 			_, err = tg.Bot.Send(tg.Cmd.Default(update))
 		}
 
+
 		if err != nil {
 			return echo.NewHTTPError(500, errors.Wrap(err, "Ошибка выполнения команды telegram"))
 		}
