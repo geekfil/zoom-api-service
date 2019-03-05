@@ -14,7 +14,7 @@ type Job struct {
 	Attempts       uint
 	CurrentAttempt uint
 	Errors         []string
-	isRunning      bool
+	IsRunning      bool
 }
 type Worker struct {
 	mu     sync.Mutex
@@ -45,7 +45,7 @@ func (w *Worker) AddJob(name string, handler JobHandler, attempts uint) *Job {
 		Attempts:       attempts,
 		CurrentAttempt: 0,
 		Errors:         make([]string, 0),
-		isRunning:      false,
+		IsRunning:      false,
 	}
 
 	w.mu.Lock()
@@ -67,14 +67,14 @@ func (w *Worker) Jobs() []*Job {
 func (w *Worker) run() {
 	for {
 		for index, job := range w.jobs {
-			if job.CurrentAttempt < job.Attempts && !job.isRunning {
-				job.isRunning = true
+			if job.CurrentAttempt < job.Attempts && !job.IsRunning {
+				job.IsRunning = true
 				job.CurrentAttempt++
 				w.log("Попытка [%d из %d] выполнения задачи [%s]", job.CurrentAttempt, job.Attempts, job.Name)
 				go func() {
 					job.Lock()
 					defer func() {
-						job.isRunning = false
+						job.IsRunning = false
 						job.Unlock()
 					}()
 					if err := job.handler(); err != nil {

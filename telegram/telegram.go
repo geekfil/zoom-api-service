@@ -102,11 +102,16 @@ func (t Telegram) CmdJobs(update tgbotapi.Update, worker *worker.Worker) tgbotap
 	if len(worker.Jobs()) == 0 {
 		text.WriteString("Нет запланированных задач")
 	} else {
-		text.WriteString(fmt.Sprintf("*В очереди выполнения %d задач:* \n",len(worker.Jobs())))
+		text.WriteString(fmt.Sprintf("*В очереди выполнения %d задач:* \n", len(worker.Jobs())))
 	}
 	for _, job := range worker.Jobs() {
 		text.WriteString(fmt.Sprintf("Задача *%s* \n", job.Name))
 		text.WriteString(fmt.Sprintf("Попытка выполнения %d из %d \n", job.CurrentAttempt, job.Attempts))
+		if job.IsRunning {
+			text.WriteString("Статус: *выполняется* \n")
+		} else {
+			text.WriteString("Статус: *в очереди* \n")
+		}
 		text.WriteString(strings.Repeat("-", 5))
 		text.WriteString("\n")
 	}
