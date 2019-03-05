@@ -155,8 +155,8 @@ func (b Bot) Run(update tgbotapi.Update) error {
 }
 
 func (b Bot) cmdStart() error {
-	msg := tgbotapi.NewMessage(b.update.Message.Chat.ID, "Меню сервиса")
-	msg.ReplyMarkup = b.keyboard()
+	msg := tgbotapi.NewMessage(b.update.chatId, "Меню сервиса")
+	msg.ReplyMarkup = *b.keyboard()
 	res, err := b.Send(msg)
 	if err != nil {
 		return errors.Wrap(err, "cmdStart")
