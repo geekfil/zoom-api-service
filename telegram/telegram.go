@@ -105,16 +105,6 @@ func NewBot(botApi *tgbotapi.BotAPI, worker *worker.Worker) *Bot {
 	}()
 	return bot
 }
-func (b Bot) cmdStart(update tgbotapi.Update) error {
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Меню сервиса")
-	msg.ReplyMarkup = b.keyboard()
-	res, err := b.Send(msg)
-	if err != nil {
-		return errors.Wrap(err, "cmdStart")
-	}
-	b.setLastMessageId(update.Message.Chat.ID, res.MessageID)
-	return nil
-}
 
 func (b Bot) keyboard() tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
@@ -148,13 +138,23 @@ func (b Bot) getCommandString(update tgbotapi.Update) string {
 	}
 }
 
+func (b Bot) cmdStart(update tgbotapi.Update) error {
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Меню сервиса")
+	msg.ReplyMarkup = b.keyboard()
+	res, err := b.Send(msg)
+	if err != nil {
+		return errors.Wrap(err, "cmdStart")
+	}
+	b.setLastMessageId(update.Message.Chat.ID, res.MessageID)
+	return nil
+}
+
 func (b Bot) cmdDefault(update tgbotapi.Update) error {
 	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Неизвестная команда")
-	res, err := b.Send(msg)
+	_, err := b.Send(msg)
 	if err != nil {
 		return errors.Wrap(err, "cmdDefault")
 	}
-	b.setLastMessageId(update.Message.Chat.ID, res.MessageID)
 	return nil
 }
 
@@ -176,11 +176,17 @@ func (b Bot) cmdJobs(update tgbotapi.Update) error {
 		text.WriteString("\n")
 	}
 
-	res, err := b.Send(tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, text.String()))
+	msg := tgbotapi.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, b.getLastMessageId(update.CallbackQuery.Message.Chat.ID), text.String())
+	_, err := b.Send(msg)
 	if err != nil {
 		return errors.Wrap(err, "cmdJobs Send")
 	}
 
-	b.setLastMessageId(update.CallbackQuery.Message.Chat.ID, res.MessageID)
 	return nil
+}
+
+func (b Bot) getLastMessageId(chatId int64) int {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.stateLastMessages[chatId]
 }
