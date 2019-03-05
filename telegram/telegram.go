@@ -83,8 +83,13 @@ func New(config *Config) *Telegram {
 }
 
 func (t Telegram) CmdStart(update tgbotapi.Update) tgbotapi.Chattable {
-
-	return tgbotapi.NewMessage(update.Message.Chat.ID, "Отправьте /help для получения справки")
+	keyboard := tgbotapi.NewReplyKeyboard(
+		tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("Состояние сервиса")),
+		tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("Задачи планировщика")),
+	)
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID,"")
+	msg.ReplyMarkup = keyboard
+	return msg
 }
 
 func (t Telegram) CmdHelp(update tgbotapi.Update) tgbotapi.Chattable {
