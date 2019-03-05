@@ -177,9 +177,11 @@ func (b Bot) cmdJobs(update tgbotapi.Update) error {
 		text.WriteString("\n")
 	}
 
-	if _, err := b.Send(tgbotapi.NewMessage(update.Message.Chat.ID, text.String())); err != nil {
+	res, err := b.Send(tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, text.String()))
+	if err != nil {
 		return errors.Wrap(err, "cmdJobs")
 	}
 
+	b.setLastMessageId(update.Message.Chat.ID, res.MessageID)
 	return nil
 }
