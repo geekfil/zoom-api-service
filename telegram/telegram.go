@@ -166,7 +166,7 @@ func (b Bot) cmdStart() error {
 }
 
 func (b Bot) cmdDefault() error {
-	msg := tgbotapi.NewMessage(b.update.Message.Chat.ID, "Неизвестная команда")
+	msg := tgbotapi.NewMessage(b.update.chatId, "Неизвестная команда")
 	_, err := b.Send(msg)
 	if err != nil {
 		return errors.Wrap(err, "cmdDefault")
