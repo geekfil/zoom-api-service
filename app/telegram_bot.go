@@ -53,7 +53,7 @@ func (app *App) handlerTelegramBot(g *echo.Group) {
 			if err != nil {
 				return echo.NewHTTPError(500, errors.Wrap(err, "Ошибка выполнения команды telegram"))
 			}
-		}else{
+		} else {
 
 		}
 

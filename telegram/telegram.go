@@ -83,9 +83,9 @@ func New(config *Config) *Telegram {
 }
 
 func (t Telegram) CmdStart(update tgbotapi.Update) tgbotapi.Chattable {
-	keyboard := tgbotapi.NewReplyKeyboard(
-		tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("Состояние сервиса")),
-		tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("Задачи планировщика")),
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Состояние сервиса", "service_state")),
+		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Задачи планировщика", "jobs")),
 	)
 	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Меню")
 	msg.ReplyMarkup = keyboard
