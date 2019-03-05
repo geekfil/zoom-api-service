@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -118,8 +119,7 @@ func NewBot(botApi *tgbotapi.BotAPI, worker *worker.Worker) *Bot {
 
 func (b Bot) keyboard() *tgbotapi.InlineKeyboardMarkup {
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Состояние сервиса", "service_state")),
-		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Задачи планировщика", "jobs")),
+		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Состояние сервиса", "sysInfo")),
 	)
 	return &keyboard
 }
@@ -146,8 +146,8 @@ func (b Bot) Run(update tgbotapi.Update) error {
 	switch newUpdate.command {
 	case "start":
 		return b.cmdStart()
-	case "jobs":
-		return b.cmdJobs()
+	case "sysInfo":
+		return b.cmdSysInfo()
 	default:
 		return b.cmdDefault()
 	}
@@ -173,32 +173,6 @@ func (b Bot) cmdDefault() error {
 	return nil
 }
 
-func (b Bot) cmdJobs() error {
-	var text strings.Builder
-	if len(b.worker.Jobs()) == 0 {
-		text.WriteString("Нет запланированных задач")
-	} else {
-		text.WriteString(fmt.Sprintf("*В очереди выполнения %d задач:* \n", len(b.worker.Jobs())))
-	}
-	for _, job := range b.worker.Jobs() {
-		text.WriteString(fmt.Sprintf("Задача *%s* \n", job.Name))
-		if job.IsRunning {
-			text.WriteString(fmt.Sprintf("Статус: выполняется. Попытка %d из %d \n", job.CurrentAttempt, job.Attempts))
-		} else {
-			text.WriteString("Статус: *в очереди* \n")
-		}
-		text.WriteString(strings.Repeat("-", 15))
-		text.WriteString("\n")
-	}
-
-	res, err := b.Send(b.newMessage(text.String()))
-	if err != nil {
-		return errors.Wrap(err, "cmdJobs Send")
-	}
-	b.setLastMessageId(res.MessageID)
-	return nil
-}
-
 func (b Bot) getLastMessageId() int {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -217,14 +191,26 @@ func (b Bot) setLastMessageId(id int) {
 
 func (b Bot) newMessage(text string) tgbotapi.Chattable {
 	if id := b.getLastMessageId(); id != 0 {
-		msg := tgbotapi.NewEditMessageText(b.update.chatId,id,text)
+		msg := tgbotapi.NewEditMessageText(b.update.chatId, id, text)
 		msg.ReplyMarkup = b.keyboard()
 		msg.ParseMode = tgbotapi.ModeMarkdown
 		return msg
-	}else{
-		msg := tgbotapi.NewMessage(b.update.chatId,text)
+	} else {
+		msg := tgbotapi.NewMessage(b.update.chatId, text)
 		msg.ReplyMarkup = b.keyboard()
 		msg.ParseMode = tgbotapi.ModeMarkdown
 		return msg
 	}
+}
+
+func (b Bot) cmdSysInfo() error {
+	var textBuilder strings.Builder
+	textBuilder.WriteString(fmt.Sprintf("Количество CPU: %d\n", runtime.NumCPU()))
+	textBuilder.WriteString(fmt.Sprintf("Горутин в работе: %d\n", runtime.NumGoroutine()))
+	res, err := b.Send(b.newMessage(textBuilder.String()))
+	if err != nil {
+		return errors.Wrap(err, "cmdSysInfo Send")
+	}
+	b.setLastMessageId(res.MessageID)
+	return nil
 }

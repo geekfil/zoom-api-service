@@ -2,8 +2,8 @@ package worker
 
 import (
 	"log"
-	"os"
 	"sync"
+	"time"
 )
 
 type JobHandler func() error
@@ -15,18 +15,28 @@ type Job struct {
 	CurrentAttempt uint
 	Errors         []string
 	IsRunning      bool
+	TimeStart      time.Time
+	TimeEnd        time.Time
 }
-type Worker struct {
-	mu     sync.Mutex
-	jobs   []*Job
-	logger *log.Logger
+type JobList chan *Job
+
+type Config struct {
 }
 
-var DefaultLogger = log.New(os.Stdout, "Worker Jobs: ", log.LstdFlags|log.Lmicroseconds)
+type Worker struct {
+	sync.Mutex
+	jobs        JobList
+	jobsLimiter chan struct{}
+	logger      *log.Logger
+	config      *Config
+}
 
 func NewWorker(opts ...OptionFunc) *Worker {
 	worker := &Worker{
-		jobs: make([]*Job, 0),
+		jobs:        make(chan *Job, 1000),
+		jobsLimiter: make(chan struct{}, 30),
+		logger:      DefaultLogger,
+		config:      DefaultConfig,
 	}
 	for _, opt := range opts {
 		if err := opt(worker); err != nil {
@@ -47,10 +57,7 @@ func (w *Worker) AddJob(name string, handler JobHandler, attempts uint) *Job {
 		Errors:         make([]string, 0),
 		IsRunning:      false,
 	}
-
-	w.mu.Lock()
-	w.jobs = append(w.jobs, job)
-	w.mu.Unlock()
+	w.jobs <- job
 	return job
 }
 
@@ -60,35 +67,27 @@ func (w *Worker) log(format string, v ...interface{}) {
 	}
 }
 
-func (w *Worker) Jobs() []*Job {
-	return w.jobs
+func (w *Worker) run() {
+	for job := range w.jobs {
+		w.jobsLimiter <- struct{}{}
+		go w.handleJob(job)
+	}
 }
 
-func (w *Worker) run() {
-	for {
-		for index, job := range w.jobs {
-			if job.CurrentAttempt < job.Attempts && !job.IsRunning {
-				go func() {
-					job.Lock()
-					defer func() {
-						job.IsRunning = false
-						job.Unlock()
-					}()
+func (w *Worker) handleJob(job *Job) {
+	if job.CurrentAttempt < job.Attempts && !job.IsRunning {
+		job.IsRunning = true
+		job.CurrentAttempt++
+		w.log("Попытка [%d из %d] выполнения задачи [%s]", job.CurrentAttempt, job.Attempts, job.Name)
+		if err := job.handler(); err != nil {
+			w.log("Задача [%s] выполнена с ошибкой: %s", job.Name, err)
+			job.Errors = append(job.Errors, err.Error())
+			w.jobs <- job
+		} else {
+			w.log("Задача [%s] выполнена успешно", job.Name)
 
-					job.IsRunning = true
-					job.CurrentAttempt++
-					w.log("Попытка [%d из %d] выполнения задачи [%s]", job.CurrentAttempt, job.Attempts, job.Name)
-
-					if err := job.handler(); err != nil {
-						w.log("Задача [%s] выполнена с ошибкой: %s", job.Name, err)
-						job.Errors = append(job.Errors, err.Error())
-					} else {
-						w.jobs = append(w.jobs[:index], w.jobs[index+1:]...)
-						w.log("Задача [%s] выполнена успешно", job.Name)
-					}
-
-				}()
-			}
 		}
+		job.IsRunning = false
 	}
+	<-w.jobsLimiter
 }

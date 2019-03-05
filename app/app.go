@@ -21,10 +21,10 @@ func NewConfig() *Config {
 }
 
 type App struct {
-	Echo     *echo.Echo
-	Telegram *telegram.Telegram
-	Config   *Config
-	Worker   *worker.Worker
+	Echo        *echo.Echo
+	Telegram    *telegram.Telegram
+	Config      *Config
+	Worker      *worker.Worker
 	TelegramBot *telegram.Bot
 }
 
@@ -42,7 +42,7 @@ func New(tg *telegram.Telegram, config *Config) *App {
 		tg,
 		config,
 		_worker,
-		telegram.NewBot(tg.Bot,_worker),
+		telegram.NewBot(tg.Bot, _worker),
 	}
 	_app.handlers()
 	return _app
