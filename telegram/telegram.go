@@ -98,18 +98,18 @@ func (t Telegram) CmdHelp(update tgbotapi.Update) tgbotapi.Chattable {
 }
 
 func (t Telegram) CmdJobs(update tgbotapi.Update, worker *worker.Worker) tgbotapi.Chattable {
-	lines := make([]string, 0)
+	var text strings.Builder
 	if len(worker.Jobs()) == 0 {
-		lines = append(lines, "Нет запланированных задач ")
+		text.WriteString("Нет запланированных задач\r\n")
 	}
 	for _, job := range worker.Jobs() {
-		lines = append(lines, "Задача *%s*")
-		lines = append(lines, fmt.Sprintf("Попытки выполнения %d из %d", job.CurrentAttempt, job.Attempts))
-		lines = append(lines, fmt.Sprintf("Попытки выполнения %d из %d", job.CurrentAttempt, job.Attempts))
-		lines = append(lines, strings.Repeat("-", 5))
+		text.WriteString(fmt.Sprintf("Задача *%s*", job.Name))
+		text.WriteString(fmt.Sprintf("Попытки выполнения %d из %d\r\n", job.CurrentAttempt, job.Attempts))
+		text.WriteString(strings.Repeat("-", 5))
+		text.WriteString("\r\n")
 	}
 
-	return t.botNewMarkdownMessage(update.Message.Chat.ID, strings.Join(lines, "\r"))
+	return t.botNewMarkdownMessage(update.Message.Chat.ID, text.String())
 }
 
 func (t Telegram) Default(update tgbotapi.Update) tgbotapi.Chattable {
