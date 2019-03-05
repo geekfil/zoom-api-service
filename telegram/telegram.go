@@ -112,7 +112,7 @@ func (t Telegram) CmdJobs(update tgbotapi.Update, worker *worker.Worker) tgbotap
 		} else {
 			text.WriteString("Статус: *в очереди* \n")
 		}
-		text.WriteString(strings.Repeat("-", 5))
+		text.WriteString(strings.Repeat("-", 15))
 		text.WriteString("\n")
 	}
 
