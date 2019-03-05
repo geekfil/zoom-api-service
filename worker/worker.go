@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"sync"
+	"time"
 )
 
 type JobHandler func() error
@@ -65,7 +66,7 @@ func (w *Worker) Jobs() []*Job {
 }
 
 func (w *Worker) run() {
-	for {
+	for range time.Tick(time.Second) {
 		for index, job := range w.jobs {
 			if job.CurrentAttempt < job.Attempts && !job.IsRunning {
 				job.IsRunning = true
@@ -89,4 +90,3 @@ func (w *Worker) run() {
 		}
 	}
 }
-
