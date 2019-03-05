@@ -106,9 +106,8 @@ func (t Telegram) CmdJobs(update tgbotapi.Update, worker *worker.Worker) tgbotap
 	}
 	for _, job := range worker.Jobs() {
 		text.WriteString(fmt.Sprintf("Задача *%s* \n", job.Name))
-		text.WriteString(fmt.Sprintf("Попытка выполнения %d из %d \n", job.CurrentAttempt, job.Attempts))
 		if job.IsRunning {
-			text.WriteString("Статус: *выполняется* \n")
+			text.WriteString(fmt.Sprintf("Статус: выполняется. Попытка %d из %d \n", job.CurrentAttempt, job.Attempts))
 		} else {
 			text.WriteString("Статус: *в очереди* \n")
 		}
