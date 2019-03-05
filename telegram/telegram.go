@@ -83,13 +83,7 @@ func New(config *Config) *Telegram {
 }
 
 func (t Telegram) CmdStart(update tgbotapi.Update) tgbotapi.Chattable {
-	keyboard := tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Состояние сервиса", "service_state")),
-		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Задачи планировщика", "jobs")),
-	)
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Меню")
-	msg.ReplyMarkup = keyboard
-	return msg
+	return t.botNewMessage(update,"Меню сервиса")
 }
 
 func (t Telegram) CmdHelp(update tgbotapi.Update) tgbotapi.Chattable {
@@ -120,15 +114,19 @@ func (t Telegram) CmdJobs(update tgbotapi.Update, worker *worker.Worker) tgbotap
 		text.WriteString("\n")
 	}
 
-	return t.botNewMarkdownMessage(update.Message.Chat.ID, text.String())
+	return t.botNewMessage(update, text.String())
 }
 
 func (t Telegram) Default(update tgbotapi.Update) tgbotapi.Chattable {
-	return tgbotapi.NewMessage(update.Message.Chat.ID, "Неизвестная команда. Отправьте /help для получения справки")
+	return t.botNewMessage(update, "Неизвестная команда. Отправьте /help для получения справки")
 }
 
-func (t Telegram) botNewMarkdownMessage(chatId int64, text string) tgbotapi.Chattable {
-	msg := tgbotapi.NewMessage(chatId, text)
+func (t Telegram) botNewMessage(update tgbotapi.Update, text string) tgbotapi.Chattable {
+	msg := tgbotapi.NewEditMessageText(update.Message.Chat.ID, update.Message.MessageID, text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
+	*msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Состояние сервиса", "service_state")),
+		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Задачи планировщика", "jobs")),
+	)
 	return msg
 }

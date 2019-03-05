@@ -33,28 +33,27 @@ func (app *App) handlerTelegramBot(g *echo.Group) {
 			return errors.Wrap(err, "Ошибка декодирования тела запроса")
 		}
 
-		if update.Message == nil {
-			return errors.New("Сообщение пустое")
-		}
-		if update.Message.IsCommand() {
-			var err error
-			switch update.Message.Command() {
-			case "start":
-				_, err = app.Telegram.Bot.Send(app.Telegram.CmdStart(update))
-			case "help":
-				_, err = app.Telegram.Bot.Send(app.Telegram.CmdHelp(update))
-			case "jobs":
-				_, err = app.Telegram.Bot.Send(app.Telegram.CmdJobs(update, app.Worker))
+		var err error
+		if update.Message != nil {
+			if update.Message.IsCommand() {
+				switch update.Message.Command() {
+				case "start":
+					_, err = app.Telegram.Bot.Send(app.Telegram.CmdStart(update))
+				case "help":
+					_, err = app.Telegram.Bot.Send(app.Telegram.CmdHelp(update))
+				case "jobs":
+					_, err = app.Telegram.Bot.Send(app.Telegram.CmdJobs(update, app.Worker))
 
-			default:
-				_, err = app.Telegram.Bot.Send(app.Telegram.Default(update))
+				default:
+					_, err = app.Telegram.Bot.Send(app.Telegram.Default(update))
+				}
+
+				if err != nil {
+					return echo.NewHTTPError(500, errors.Wrap(err, "Ошибка выполнения команды telegram"))
+				}
 			}
-
-			if err != nil {
-				return echo.NewHTTPError(500, errors.Wrap(err, "Ошибка выполнения команды telegram"))
-			}
-		} else {
-
+		} else if update.CallbackQuery != nil {
+			_, err = app.Telegram.Bot.AnswerCallbackQuery(tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data))
 		}
 
 		return ctx.NoContent(200)
