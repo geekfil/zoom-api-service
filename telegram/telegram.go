@@ -83,7 +83,7 @@ func New(config *Config) *Telegram {
 }
 
 func (t Telegram) CmdStart(update tgbotapi.Update) tgbotapi.Chattable {
-	return t.botNewMessage(update,"Меню сервиса")
+	return t.botNewMessage(update, "Меню сервиса")
 }
 
 func (t Telegram) CmdHelp(update tgbotapi.Update) tgbotapi.Chattable {
@@ -122,11 +122,10 @@ func (t Telegram) Default(update tgbotapi.Update) tgbotapi.Chattable {
 }
 
 func (t Telegram) botNewMessage(update tgbotapi.Update, text string) tgbotapi.Chattable {
-	msg := tgbotapi.NewEditMessageText(update.Message.Chat.ID, update.Message.MessageID, text)
-	msg.ParseMode = tgbotapi.ModeMarkdown
-	*msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Состояние сервиса", "service_state")),
 		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Задачи планировщика", "jobs")),
 	)
-	return msg
+
+	return tgbotapi.NewEditMessageReplyMarkup(update.Message.Chat.ID, update.Message.MessageID, keyboard)
 }
