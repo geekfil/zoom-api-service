@@ -129,7 +129,6 @@ func (b Bot) Run(update tgbotapi.Update) error {
 		return b.cmdStart(update)
 	case "jobs":
 		return b.cmdJobs(update)
-
 	default:
 		return b.cmdDefault(update)
 	}
@@ -177,16 +176,11 @@ func (b Bot) cmdJobs(update tgbotapi.Update) error {
 		text.WriteString("\n")
 	}
 
-	_, err := b.AnswerCallbackQuery(tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data))
-	if err != nil {
-		return errors.Wrap(err, "cmdJobs AnswerCallbackQuery")
-	}
-
 	res, err := b.Send(tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, text.String()))
 	if err != nil {
 		return errors.Wrap(err, "cmdJobs Send")
 	}
 
-	b.setLastMessageId(update.Message.Chat.ID, res.MessageID)
+	b.setLastMessageId(update.CallbackQuery.Message.Chat.ID, res.MessageID)
 	return nil
 }
