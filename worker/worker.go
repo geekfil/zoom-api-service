@@ -34,7 +34,7 @@ type Worker struct {
 func NewWorker(opts ...OptionFunc) *Worker {
 	worker := &Worker{
 		jobs:        make(chan *Job, 1000),
-		jobsLimiter: make(chan struct{}, 30),
+		jobsLimiter: make(chan struct{}, 5),
 		logger:      DefaultLogger,
 		config:      DefaultConfig,
 	}
