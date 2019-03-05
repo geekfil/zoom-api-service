@@ -116,11 +116,12 @@ func NewBot(botApi *tgbotapi.BotAPI, worker *worker.Worker) *Bot {
 	return bot
 }
 
-func (b Bot) keyboard() tgbotapi.InlineKeyboardMarkup {
-	return tgbotapi.NewInlineKeyboardMarkup(
+func (b Bot) keyboard() *tgbotapi.InlineKeyboardMarkup {
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Состояние сервиса", "service_state")),
 		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Задачи планировщика", "jobs")),
 	)
+	return &keyboard
 }
 
 func (b Bot) Run(update tgbotapi.Update) error {
@@ -192,8 +193,7 @@ func (b Bot) cmdJobs() error {
 	}
 
 	msg := tgbotapi.NewEditMessageText(b.update.chatId, b.getLastMessageId(), text.String())
-	msg.ReplyMarkup.InlineKeyboard = append(msg.ReplyMarkup.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Состояние сервиса", "service_state")),
-		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Задачи планировщика", "jobs")), )
+	msg.ReplyMarkup = b.keyboard()
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	res, err := b.Send(msg)
 	if err != nil {
