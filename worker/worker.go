@@ -68,15 +68,17 @@ func (w *Worker) run() {
 	for {
 		for index, job := range w.jobs {
 			if job.CurrentAttempt < job.Attempts && !job.IsRunning {
-				job.IsRunning = true
-				job.CurrentAttempt++
-				w.log("Попытка [%d из %d] выполнения задачи [%s]", job.CurrentAttempt, job.Attempts, job.Name)
 				go func() {
 					job.Lock()
 					defer func() {
 						job.IsRunning = false
 						job.Unlock()
 					}()
+
+					job.IsRunning = true
+					job.CurrentAttempt++
+					w.log("Попытка [%d из %d] выполнения задачи [%s]", job.CurrentAttempt, job.Attempts, job.Name)
+
 					if err := job.handler(); err != nil {
 						w.log("Задача [%s] выполнена с ошибкой: %s", job.Name, err)
 						job.Errors = append(job.Errors, err.Error())
