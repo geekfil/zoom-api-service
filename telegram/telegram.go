@@ -102,13 +102,19 @@ func (t Telegram) CmdJobs(update tgbotapi.Update, worker *worker.Worker) tgbotap
 	text.WriteString(fmt.Sprintf("*В работе %d задачи:*", len(worker.Jobs())))
 	for _, job := range worker.Jobs() {
 		text.WriteString(fmt.Sprintf("Задача *%s*", job.Name))
-		text.WriteString(fmt.Sprintf("Попытки выполнения %d из %d \r\n", job.CurrentAttempt, job.Attempts))
+		text.WriteString(fmt.Sprintf("Попытки выполнения %d из %d", job.CurrentAttempt, job.Attempts))
 		text.WriteString(strings.Repeat("-", 5))
 	}
 
-	return tgbotapi.NewMessage(update.Message.Chat.ID, text.String())
+	return t.botNewMarkdownMessage(update.Message.Chat.ID, text.String())
 }
 
 func (t Telegram) Default(update tgbotapi.Update) tgbotapi.Chattable {
 	return tgbotapi.NewMessage(update.Message.Chat.ID, "Неизвестная команда. Отправьте /help для получения справки")
+}
+
+func (t Telegram) botNewMarkdownMessage(chatId int64, text string) tgbotapi.Chattable {
+	msg := tgbotapi.NewMessage(chatId, text)
+	msg.ParseMode = tgbotapi.ModeMarkdown
+	return msg
 }

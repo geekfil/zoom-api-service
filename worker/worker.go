@@ -66,32 +66,27 @@ func (w *Worker) Jobs() []*Job {
 
 func (w *Worker) run() {
 	for {
-		w.handleJobs()
-	}
-}
-
-func (w *Worker) handleJobs() {
-
-	for index, job := range w.jobs {
-		if job.CurrentAttempt < job.Attempts && !job.isRunning {
-			job.isRunning = true
-			job.CurrentAttempt++
-			w.log("Попытка [%d из %d] выполнения задачи [%s]", job.CurrentAttempt, job.Attempts, job.Name)
-			go func() {
-				job.Lock()
-				defer func() {
-					job.isRunning = false
-					job.Unlock()
+		for index, job := range w.jobs {
+			if job.CurrentAttempt < job.Attempts && !job.isRunning {
+				job.isRunning = true
+				job.CurrentAttempt++
+				w.log("Попытка [%d из %d] выполнения задачи [%s]", job.CurrentAttempt, job.Attempts, job.Name)
+				go func() {
+					job.Lock()
+					defer func() {
+						job.isRunning = false
+						job.Unlock()
+					}()
+					if err := job.handler(); err != nil {
+						w.log("Задача [%s] выполнена с ошибкой: %s", job.Name, err)
+						job.Errors = append(job.Errors, err.Error())
+					} else {
+						w.jobs = append(w.jobs[:index], w.jobs[index+1:]...)
+						w.log("Задача [%s] выполнена успешно", job.Name)
+					}
 				}()
-				if err := job.handler(); err != nil {
-					w.log("Задача [%s] выполнена с ошибкой: %s", job.Name, err)
-					job.Errors = append(job.Errors, err.Error())
-				} else {
-					w.jobs = append(w.jobs[:index], w.jobs[index+1:]...)
-					w.log("Задача [%s] выполнена успешно", job.Name)
-				}
-			}()
+			}
 		}
 	}
-
 }
+
