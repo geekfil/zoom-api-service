@@ -196,7 +196,6 @@ func (b Bot) cmdJobs() error {
 		return errors.Wrap(err, "cmdJobs Send")
 	}
 	b.setLastMessageId(res.MessageID)
-
 	return nil
 }
 
@@ -217,8 +216,8 @@ func (b Bot) setLastMessageId(id int) {
 }
 
 func (b Bot) newMessage(text string) tgbotapi.Chattable {
-	if id := b.getLastMessageId(); id > 0 {
-		msg := tgbotapi.NewEditMessageText(b.update.chatId, b.getLastMessageId(),text)
+	if id := b.getLastMessageId(); id != 0 {
+		msg := tgbotapi.NewEditMessageText(b.update.chatId,id,text)
 		msg.ReplyMarkup = b.keyboard()
 		msg.ParseMode = tgbotapi.ModeMarkdown
 		return msg
