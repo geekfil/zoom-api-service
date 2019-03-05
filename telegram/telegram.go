@@ -124,7 +124,7 @@ func (b Bot) keyboard() tgbotapi.InlineKeyboardMarkup {
 }
 
 func (b Bot) Run(update tgbotapi.Update) error {
-	newUpdate := Update{}
+	newUpdate := Update{Update: update}
 	if update.Message != nil {
 		newUpdate.command = update.Message.Command()
 		newUpdate.chatId = update.Message.Chat.ID
@@ -137,8 +137,9 @@ func (b Bot) Run(update tgbotapi.Update) error {
 		newUpdate = Update{Update: update}
 	}
 
-	b.update = newUpdate
+
 	b.mu.Lock()
+	b.update = newUpdate
 	b.stateLastMessages[b.update.chatId] = b.update.messageId
 	b.mu.Unlock()
 
