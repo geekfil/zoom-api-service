@@ -83,11 +83,21 @@ func New(config *Config) *Telegram {
 	}
 }
 
+type Update struct {
+	tgbotapi.Update
+	command       string
+	chatId        int64
+	messageId     int
+	userId        int
+	lastMessageId int
+}
+
 type Bot struct {
 	*tgbotapi.BotAPI
 	mu                sync.Mutex
 	worker            *worker.Worker
 	stateLastMessages map[int64]int
+	update            Update
 }
 
 func NewBot(botApi *tgbotapi.BotAPI, worker *worker.Worker) *Bot {
@@ -114,43 +124,47 @@ func (b Bot) keyboard() tgbotapi.InlineKeyboardMarkup {
 }
 
 func (b Bot) Run(update tgbotapi.Update) error {
-	switch b.getCommandString(update) {
-	case "start":
-		return b.cmdStart(update)
-	case "jobs":
-		return b.cmdJobs(update)
-	default:
-		return b.cmdDefault(update)
-	}
-}
-
-func (b Bot) setLastMessageId(chatId int64, messageId int) {
-	b.stateLastMessages[chatId] = messageId
-}
-
-func (b Bot) getCommandString(update tgbotapi.Update) string {
-	if update.Message != nil && update.Message.IsCommand() {
-		return update.Message.Command()
+	newUpdate := Update{}
+	if update.Message != nil {
+		newUpdate.command = update.Message.Command()
+		newUpdate.chatId = update.Message.Chat.ID
+		newUpdate.messageId = update.Message.MessageID
 	} else if update.CallbackQuery != nil {
-		return update.CallbackQuery.Data
+		newUpdate.command = update.CallbackQuery.Data
+		newUpdate.chatId = update.CallbackQuery.Message.Chat.ID
+		newUpdate.messageId = update.CallbackQuery.Message.MessageID
 	} else {
-		return ""
+		newUpdate = Update{Update: update}
+	}
+
+	b.update = newUpdate
+	b.mu.Lock()
+	b.stateLastMessages[b.update.chatId] = b.update.messageId
+	b.mu.Unlock()
+
+	switch newUpdate.command {
+	case "start":
+		return b.cmdStart()
+	case "jobs":
+		return b.cmdJobs()
+	default:
+		return b.cmdDefault()
 	}
 }
 
-func (b Bot) cmdStart(update tgbotapi.Update) error {
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Меню сервиса")
+func (b Bot) cmdStart() error {
+	msg := tgbotapi.NewMessage(b.update.Message.Chat.ID, "Меню сервиса")
 	msg.ReplyMarkup = b.keyboard()
 	res, err := b.Send(msg)
 	if err != nil {
 		return errors.Wrap(err, "cmdStart")
 	}
-	b.setLastMessageId(update.Message.Chat.ID, res.MessageID)
+	b.setLastMessageId(res.MessageID)
 	return nil
 }
 
-func (b Bot) cmdDefault(update tgbotapi.Update) error {
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Неизвестная команда")
+func (b Bot) cmdDefault() error {
+	msg := tgbotapi.NewMessage(b.update.Message.Chat.ID, "Неизвестная команда")
 	_, err := b.Send(msg)
 	if err != nil {
 		return errors.Wrap(err, "cmdDefault")
@@ -158,7 +172,7 @@ func (b Bot) cmdDefault(update tgbotapi.Update) error {
 	return nil
 }
 
-func (b Bot) cmdJobs(update tgbotapi.Update) error {
+func (b Bot) cmdJobs() error {
 	var text strings.Builder
 	if len(b.worker.Jobs()) == 0 {
 		text.WriteString("Нет запланированных задач")
@@ -176,17 +190,31 @@ func (b Bot) cmdJobs(update tgbotapi.Update) error {
 		text.WriteString("\n")
 	}
 
-	msg := tgbotapi.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, b.getLastMessageId(update.CallbackQuery.Message.Chat.ID), text.String())
-	_, err := b.Send(msg)
+	msg := tgbotapi.NewEditMessageText(b.update.chatId, b.getLastMessageId(), text.String())
+	msg.ReplyMarkup.InlineKeyboard = append(msg.ReplyMarkup.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Состояние сервиса", "service_state")),
+		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Задачи планировщика", "jobs")), )
+	msg.ParseMode = tgbotapi.ModeMarkdown
+	res, err := b.Send(msg)
 	if err != nil {
 		return errors.Wrap(err, "cmdJobs Send")
 	}
+	b.setLastMessageId(res.MessageID)
 
 	return nil
 }
 
-func (b Bot) getLastMessageId(chatId int64) int {
+func (b Bot) getLastMessageId() int {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	return b.stateLastMessages[chatId]
+	if lastMessageId, ok := b.stateLastMessages[b.update.chatId]; ok {
+		return lastMessageId
+	} else {
+		return 0
+	}
+}
+
+func (b Bot) setLastMessageId(id int) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.stateLastMessages[b.update.chatId] = id
 }
