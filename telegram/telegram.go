@@ -138,7 +138,6 @@ func (b Bot) Run(update tgbotapi.Update) error {
 		newUpdate = Update{Update: update}
 	}
 
-
 	b.mu.Lock()
 	b.update = newUpdate
 	b.stateLastMessages[b.update.chatId] = b.update.messageId
@@ -156,7 +155,7 @@ func (b Bot) Run(update tgbotapi.Update) error {
 
 func (b Bot) cmdStart() error {
 	msg := tgbotapi.NewMessage(b.update.chatId, "Меню сервиса")
-	msg.ReplyMarkup = *b.keyboard()
+	msg.ReplyMarkup = b.keyboard()
 	res, err := b.Send(msg)
 	if err != nil {
 		return errors.Wrap(err, "cmdStart")
@@ -192,10 +191,7 @@ func (b Bot) cmdJobs() error {
 		text.WriteString("\n")
 	}
 
-	msg := tgbotapi.NewEditMessageText(b.update.chatId, b.getLastMessageId(), text.String())
-	msg.ReplyMarkup = b.keyboard()
-	msg.ParseMode = tgbotapi.ModeMarkdown
-	res, err := b.Send(msg)
+	res, err := b.Send(b.newMessage(text.String()))
 	if err != nil {
 		return errors.Wrap(err, "cmdJobs Send")
 	}
@@ -218,4 +214,18 @@ func (b Bot) setLastMessageId(id int) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.stateLastMessages[b.update.chatId] = id
+}
+
+func (b Bot) newMessage(text string) tgbotapi.Chattable {
+	if id := b.getLastMessageId(); id > 0 {
+		msg := tgbotapi.NewEditMessageText(b.update.chatId, b.getLastMessageId(),text)
+		msg.ReplyMarkup = b.keyboard()
+		msg.ParseMode = tgbotapi.ModeMarkdown
+		return msg
+	}else{
+		msg := tgbotapi.NewMessage(b.update.chatId,text)
+		msg.ReplyMarkup = b.keyboard()
+		msg.ParseMode = tgbotapi.ModeMarkdown
+		return msg
+	}
 }
