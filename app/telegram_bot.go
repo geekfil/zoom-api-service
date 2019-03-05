@@ -32,28 +32,8 @@ func (app *App) handlerTelegramBot(g *echo.Group) {
 		if err := json.NewDecoder(ctx.Request().Body).Decode(&update); err != nil {
 			return errors.Wrap(err, "Ошибка декодирования тела запроса")
 		}
-
-		var err error
-		if update.Message != nil {
-			if update.Message.IsCommand() {
-				switch update.Message.Command() {
-				case "start":
-					_, err = app.Telegram.Bot.Send(app.Telegram.CmdStart(update))
-				case "help":
-					_, err = app.Telegram.Bot.Send(app.Telegram.CmdHelp(update))
-				case "jobs":
-					_, err = app.Telegram.Bot.Send(app.Telegram.CmdJobs(update, app.Worker))
-
-				default:
-					_, err = app.Telegram.Bot.Send(app.Telegram.Default(update))
-				}
-
-				if err != nil {
-					return echo.NewHTTPError(500, errors.Wrap(err, "Ошибка выполнения команды telegram"))
-				}
-			}
-		} else if update.CallbackQuery != nil {
-			_, err = app.Telegram.Bot.AnswerCallbackQuery(tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data))
+		if err := app.TelegramBot.Run(update); err != nil {
+			return echo.NewHTTPError(500, errors.Wrap(err, "Ошибка выполнения комманды бота"))
 		}
 
 		return ctx.NoContent(200)

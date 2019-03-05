@@ -6,6 +6,7 @@ import (
 	"github.com/caarlos0/env"
 	"github.com/geekfil/zoom-api-service/worker"
 	"github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/pkg/errors"
 	"golang.org/x/net/proxy"
 	"log"
 	"net"
@@ -82,28 +83,90 @@ func New(config *Config) *Telegram {
 	}
 }
 
-func (t Telegram) CmdStart(update tgbotapi.Update) tgbotapi.Chattable {
-	return t.botNewMessage(update, "Меню сервиса")
+type Bot struct {
+	*tgbotapi.BotAPI
+	mu                sync.Mutex
+	worker            *worker.Worker
+	stateLastMessages map[int64]int
 }
 
-func (t Telegram) CmdHelp(update tgbotapi.Update) tgbotapi.Chattable {
-	var text = `
-/help - справка по командам
-/jobs - текущие задачи планировщика
-/goroutines - количество работающих горутин
-/cpu - количество ядер процессора
-`
-	return tgbotapi.NewMessage(update.Message.Chat.ID, text)
+func NewBot(botApi *tgbotapi.BotAPI, worker *worker.Worker) *Bot {
+	bot := &Bot{
+		BotAPI:            botApi,
+		worker:            worker,
+		stateLastMessages: make(map[int64]int, 100),
+	}
+	go func() {
+		for range time.Tick(time.Hour * 24) {
+			bot.mu.Lock()
+			bot.stateLastMessages = make(map[int64]int, 100)
+			bot.mu.Unlock()
+		}
+	}()
+	return bot
+}
+func (b Bot) cmdStart(update tgbotapi.Update) error {
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Меню сервиса")
+	msg.ReplyMarkup = b.keyboard()
+	res, err := b.Send(msg)
+	if err != nil {
+		return errors.Wrap(err, "cmdStart")
+	}
+	b.setLastMessageId(update.Message.Chat.ID, res.MessageID)
+	return nil
 }
 
-func (t Telegram) CmdJobs(update tgbotapi.Update, worker *worker.Worker) tgbotapi.Chattable {
+func (b Bot) keyboard() tgbotapi.InlineKeyboardMarkup {
+	return tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Состояние сервиса", "service_state")),
+		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Задачи планировщика", "jobs")),
+	)
+}
+
+func (b Bot) Run(update tgbotapi.Update) error {
+	switch b.getCommandString(update) {
+	case "start":
+		return b.cmdStart(update)
+	case "jobs":
+		return b.cmdJobs(update)
+
+	default:
+		return b.cmdDefault(update)
+	}
+}
+
+func (b Bot) setLastMessageId(chatId int64, messageId int) {
+	b.stateLastMessages[chatId] = messageId
+}
+
+func (b Bot) getCommandString(update tgbotapi.Update) string {
+	if update.Message != nil && update.Message.IsCommand() {
+		return update.Message.Command()
+	} else if update.CallbackQuery != nil {
+		return update.CallbackQuery.Data
+	} else {
+		return ""
+	}
+}
+
+func (b Bot) cmdDefault(update tgbotapi.Update) error {
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Неизвестная команда")
+	res, err := b.Send(msg)
+	if err != nil {
+		return errors.Wrap(err, "cmdDefault")
+	}
+	b.setLastMessageId(update.Message.Chat.ID, res.MessageID)
+	return nil
+}
+
+func (b Bot) cmdJobs(update tgbotapi.Update) error {
 	var text strings.Builder
-	if len(worker.Jobs()) == 0 {
+	if len(b.worker.Jobs()) == 0 {
 		text.WriteString("Нет запланированных задач")
 	} else {
-		text.WriteString(fmt.Sprintf("*В очереди выполнения %d задач:* \n", len(worker.Jobs())))
+		text.WriteString(fmt.Sprintf("*В очереди выполнения %d задач:* \n", len(b.worker.Jobs())))
 	}
-	for _, job := range worker.Jobs() {
+	for _, job := range b.worker.Jobs() {
 		text.WriteString(fmt.Sprintf("Задача *%s* \n", job.Name))
 		if job.IsRunning {
 			text.WriteString(fmt.Sprintf("Статус: выполняется. Попытка %d из %d \n", job.CurrentAttempt, job.Attempts))
@@ -114,18 +177,9 @@ func (t Telegram) CmdJobs(update tgbotapi.Update, worker *worker.Worker) tgbotap
 		text.WriteString("\n")
 	}
 
-	return t.botNewMessage(update, text.String())
-}
+	if _, err := b.Send(tgbotapi.NewMessage(update.Message.Chat.ID, text.String())); err != nil {
+		return errors.Wrap(err, "cmdJobs")
+	}
 
-func (t Telegram) Default(update tgbotapi.Update) tgbotapi.Chattable {
-	return t.botNewMessage(update, "Неизвестная команда. Отправьте /help для получения справки")
-}
-
-func (t Telegram) botNewMessage(update tgbotapi.Update, text string) tgbotapi.Chattable {
-	keyboard := tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Состояние сервиса", "service_state")),
-		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Задачи планировщика", "jobs")),
-	)
-
-	return tgbotapi.NewEditMessageReplyMarkup(update.Message.Chat.ID, update.Message.MessageID+1, keyboard)
+	return nil
 }
