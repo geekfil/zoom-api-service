@@ -18,8 +18,7 @@ type Job struct {
 }
 type Worker struct {
 	mu     sync.Mutex
-	jobs   chan *Job
-	_jobs  chan Job
+	jobs   []*Job
 	logger *log.Logger
 }
 
@@ -27,7 +26,7 @@ var DefaultLogger = log.New(os.Stdout, "Worker CmdJobs: ", log.LstdFlags|log.Lmi
 
 func NewWorker(opts ...OptionFunc) *Worker {
 	worker := &Worker{
-		jobs: make(chan *Job, 100),
+		jobs: make([]*Job, 100),
 	}
 	for _, opt := range opts {
 		if err := opt(worker); err != nil {
@@ -49,27 +48,39 @@ func (w *Worker) AddJob(name string, handler JobHandler, attempts uint) *Job {
 		make([]string, 0),
 		done,
 	}
-	w.jobs <- job
+
+	w.mu.Lock()
+	w.jobs = append(w.jobs, job)
+	w.mu.Unlock()
 	return job
 }
 
-func (w *Worker) handleJob(job *Job) {
-	if job.CurrentAttempt < job.Attempts {
-		job.CurrentAttempt++
-		w.log("Попытка [%d из %d] выполнения задачи [%s]", job.CurrentAttempt, job.Attempts, job.Name)
-		if err := job.handler(); err != nil {
-			w.log("Задача [%s] выполнена с ошибкой: %s", job.Name, err)
-			job.Errors = append(job.Errors, err.Error())
-			w.jobs <- job
-			if job.CurrentAttempt == job.Attempts {
-				job.Done <- false
+func (w *Worker) handleJobs() {
+	for _, job := range w.jobs {
+		if job.CurrentAttempt < job.Attempts {
+			job.CurrentAttempt++
+			w.log("Попытка [%d из %d] выполнения задачи [%s]", job.CurrentAttempt, job.Attempts, job.Name)
+			if err := job.handler(); err != nil {
+				w.log("Задача [%s] выполнена с ошибкой: %s", job.Name, err)
+				job.Errors = append(job.Errors, err.Error())
+				if job.CurrentAttempt == job.Attempts {
+					job.Done <- false
+				}
+				w.mu.Lock()
+				w.jobs = append([]*Job{job}, w.jobs[:len(w.jobs)-1]...)
+				w.mu.Unlock()
+			} else {
+				w.mu.Lock()
+				job.Done <- true
+				w.jobs = w.jobs[:len(w.jobs)-1]
+				w.mu.Unlock()
+				w.log("Задача [%s] выполнена успешно", job.Name)
 			}
-		} else {
-			job.Done <- true
-			w.log("Задача [%s] выполнена успешно", job.Name)
+
+			runtime.Gosched()
 		}
 	}
-	runtime.Gosched()
+
 }
 
 func (w *Worker) log(format string, v ...interface{}) {
@@ -79,12 +90,16 @@ func (w *Worker) log(format string, v ...interface{}) {
 }
 
 func (w *Worker) run() {
-	for job := range w.jobs {
-		w._jobs <- *job
-		go w.handleJob(job)
+	for {
+		for {
+			if len(w.jobs) > 0 {
+				go w.handleJobs()
+			}
+
+		}
 	}
 }
 
-func (w *Worker) Jobs() <-chan Job {
-	return w._jobs
+func (w *Worker) Jobs() []*Job {
+	return w.jobs
 }
