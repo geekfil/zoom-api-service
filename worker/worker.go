@@ -26,7 +26,7 @@ var DefaultLogger = log.New(os.Stdout, "Worker CmdJobs: ", log.LstdFlags|log.Lmi
 
 func NewWorker(opts ...OptionFunc) *Worker {
 	worker := &Worker{
-		jobs: make([]*Job, 100),
+		jobs: make([]*Job,0),
 	}
 	for _, opt := range opts {
 		if err := opt(worker); err != nil {
