@@ -127,5 +127,5 @@ func (t Telegram) botNewMessage(update tgbotapi.Update, text string) tgbotapi.Ch
 		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Задачи планировщика", "jobs")),
 	)
 
-	return tgbotapi.NewEditMessageReplyMarkup(update.Message.Chat.ID, update.Message.MessageID, keyboard)
+	return tgbotapi.NewEditMessageReplyMarkup(update.Message.Chat.ID, update.Message.MessageID+1, keyboard)
 }
