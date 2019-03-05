@@ -87,7 +87,7 @@ func (t Telegram) CmdStart(update tgbotapi.Update) tgbotapi.Chattable {
 		tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("Состояние сервиса")),
 		tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("Задачи планировщика")),
 	)
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID,"")
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Меню")
 	msg.ReplyMarkup = keyboard
 	return msg
 }
