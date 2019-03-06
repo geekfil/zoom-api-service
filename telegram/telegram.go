@@ -98,6 +98,8 @@ func (b Bot) keyboard() *tgbotapi.InlineKeyboardMarkup {
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Состояние сервиса", "sysInfo"),
+		),
+		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("Проверить доступность сайта", "pingSite"),
 		),
 	)
