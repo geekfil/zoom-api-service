@@ -12,13 +12,13 @@ import (
 
 func (app *App) handlerTelegramBot(g *echo.Group) {
 	g.GET("/setwebhook", func(ctx echo.Context) error {
-		tg := ctx.Get("tg").(*telegram.Telegram)
+		tg := ctx.Get("tg").(*telegram.Bot)
 		webhookUrl, err := url.Parse(fmt.Sprint(ctx.Scheme(), "://", ctx.Request().Host, "/telegram/bot/webhook"))
 		if err != nil {
 			return echo.NewHTTPError(500, err)
 		}
 
-		_, err = tg.Bot.SetWebhook(tgbotapi.WebhookConfig{URL: webhookUrl})
+		_, err = tg.SetWebhook(tgbotapi.WebhookConfig{URL: webhookUrl})
 		if err != nil {
 			return echo.NewHTTPError(400, errors.Wrap(err, "Tg.Bot.SetWebhook"))
 		}

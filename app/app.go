@@ -22,7 +22,6 @@ func NewConfig() *Config {
 
 type App struct {
 	Echo        *echo.Echo
-	Telegram    *telegram.Telegram
 	Config      *Config
 	Worker      *worker.Worker
 	TelegramBot *telegram.Bot
@@ -34,15 +33,13 @@ func (app *App) Run() {
 	}
 }
 
-func New(tg *telegram.Telegram, config *Config) *App {
+func New(tgBot *telegram.Bot, config *Config, worker *worker.Worker) *App {
 	_echo := echo.New()
-	_worker := worker.NewWorker(worker.WithLogger(worker.DefaultLogger))
 	_app := &App{
-		_echo,
-		tg,
-		config,
-		_worker,
-		telegram.NewBot(tg.Bot, _worker),
+		Echo:        _echo,
+		Config:      config,
+		Worker:      worker,
+		TelegramBot: tgBot,
 	}
 	_app.handlers()
 	return _app

@@ -55,33 +55,12 @@ type SendError struct {
 	TypeError string    `json:"type_error"`
 }
 
-type Telegram struct {
-	sync.Mutex
-	Bot        *tgbotapi.BotAPI
-	Config     *Config
-	SendErrors []SendError
-}
-
 func NewConfig() *Config {
 	config := Config{}
 	if err := env.Parse(&config); err != nil {
 		log.Panicln(err)
 	}
 	return &config
-}
-
-func New(config *Config) *Telegram {
-
-	bot, err := tgbotapi.NewBotAPIWithClient(config.Token, config.httpClient())
-	if err != nil {
-		log.Panic(err)
-	}
-
-	return &Telegram{
-		Bot:        bot,
-		Config:     config,
-		SendErrors: []SendError{},
-	}
 }
 
 type Update struct {
@@ -95,26 +74,24 @@ type Update struct {
 
 type Bot struct {
 	*tgbotapi.BotAPI
-	mu                sync.Mutex
-	worker            *worker.Worker
+	sync.Mutex
+	Worker            *worker.Worker
+	Config            *Config
 	stateLastMessages map[int64]int
 	update            Update
 }
 
-func NewBot(botApi *tgbotapi.BotAPI, worker *worker.Worker) *Bot {
+func NewBot(config *Config) (*Bot, error) {
+	botApi, err := tgbotapi.NewBotAPIWithClient(config.Token, config.httpClient())
+	if err != nil {
+		return nil, err
+	}
 	bot := &Bot{
+		Config: config,
 		BotAPI:            botApi,
-		worker:            worker,
 		stateLastMessages: make(map[int64]int, 100),
 	}
-	go func() {
-		for range time.Tick(time.Hour * 24) {
-			bot.mu.Lock()
-			bot.stateLastMessages = make(map[int64]int, 100)
-			bot.mu.Unlock()
-		}
-	}()
-	return bot
+	return bot, nil
 }
 
 func (b Bot) keyboard() *tgbotapi.InlineKeyboardMarkup {
@@ -138,10 +115,10 @@ func (b Bot) Run(update tgbotapi.Update) error {
 		newUpdate = Update{Update: update}
 	}
 
-	b.mu.Lock()
+	b.Lock()
 	b.update = newUpdate
 	b.stateLastMessages[b.update.chatId] = b.update.messageId
-	b.mu.Unlock()
+	b.Unlock()
 
 	switch newUpdate.command {
 	case "start":
@@ -174,8 +151,8 @@ func (b Bot) cmdDefault() error {
 }
 
 func (b Bot) getLastMessageId() int {
-	b.mu.Lock()
-	defer b.mu.Unlock()
+	b.Lock()
+	defer b.Unlock()
 	if lastMessageId, ok := b.stateLastMessages[b.update.chatId]; ok {
 		return lastMessageId
 	} else {
@@ -184,8 +161,8 @@ func (b Bot) getLastMessageId() int {
 }
 
 func (b Bot) setLastMessageId(id int) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
+	b.Lock()
+	defer b.Unlock()
 	b.stateLastMessages[b.update.chatId] = id
 }
 
