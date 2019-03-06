@@ -87,7 +87,7 @@ func NewBot(config *Config) (*Bot, error) {
 		return nil, err
 	}
 	bot := &Bot{
-		Config: config,
+		Config:            config,
 		BotAPI:            botApi,
 		stateLastMessages: make(map[int64]int, 100),
 	}
@@ -96,7 +96,10 @@ func NewBot(config *Config) (*Bot, error) {
 
 func (b Bot) keyboard() *tgbotapi.InlineKeyboardMarkup {
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData("Состояние сервиса", "sysInfo")),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData("Состояние сервиса", "sysInfo"),
+			tgbotapi.NewInlineKeyboardButtonData("Проверить доступность сайта", "pingSite"),
+		),
 	)
 	return &keyboard
 }
@@ -125,6 +128,9 @@ func (b Bot) Run(update tgbotapi.Update) error {
 		return b.cmdStart()
 	case "sysInfo":
 		return b.cmdSysInfo()
+	case "pingSite":
+		return b.cmdPingSite()
+
 	default:
 		return b.cmdDefault()
 	}
@@ -189,5 +195,25 @@ func (b Bot) cmdSysInfo() error {
 		return errors.Wrap(err, "cmdSysInfo Send")
 	}
 	b.setLastMessageId(res.MessageID)
+	return nil
+}
+
+func (b Bot) cmdPingSite() error {
+	res, err := http.Get("https://zoom.moda/")
+	if err != nil {
+		res, err := b.Send(b.newMessage("Сайт не доступен"))
+		if err != nil {
+			return errors.Wrap(err, "cmdPingSite Send")
+		}
+		b.setLastMessageId(res.MessageID)
+		return nil
+	}
+
+	tgRes, err := b.Send(b.newMessage(fmt.Sprintf("Сайт доступен. Код ответа: %d \n", res.StatusCode)))
+	if err != nil {
+		return errors.Wrap(err, "cmdPingSite Send")
+	}
+	b.setLastMessageId(tgRes.MessageID)
+
 	return nil
 }
