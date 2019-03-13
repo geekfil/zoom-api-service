@@ -18,7 +18,7 @@ type Job struct {
 	IsRunning      bool
 	TimeStart      time.Time
 	TimeEnd        time.Time
-	StartAfter        <-chan time.Time
+	StartAfter     <-chan time.Time
 }
 type JobList chan *Job
 
@@ -36,7 +36,7 @@ type Worker struct {
 func NewWorker(opts ...OptionFunc) *Worker {
 	worker := &Worker{
 		jobs:        make(chan *Job, 1000),
-		jobsLimiter: make(chan struct{}, 5),
+		jobsLimiter: make(chan struct{}, 500),
 		logger:      DefaultLogger,
 		config:      DefaultConfig,
 	}
@@ -72,13 +72,17 @@ func (w *Worker) log(format string, v ...interface{}) {
 
 func (w *Worker) Run() {
 	for job := range w.jobs {
-		w.jobsLimiter <- struct{}{}
-		go w.handleJob(job)
+		select {
+		case w.jobsLimiter <- struct{}{}:
+			go w.handleJob(job)
+		case <-job.StartAfter:
+			go w.handleJob(job)
+		}
+
 	}
 }
 
 func (w *Worker) handleJob(job *Job) {
-	<-job.StartAfter
 	if job.CurrentAttempt < job.Attempts && !job.IsRunning {
 		job.IsRunning = true
 		job.CurrentAttempt++
@@ -86,7 +90,7 @@ func (w *Worker) handleJob(job *Job) {
 		if err := job.handler(); err != nil {
 			w.log("Задача [%s] выполнена с ошибкой: %s", job.Name, err)
 			job.Errors = append(job.Errors, err.Error())
-			job.StartAfter = time.After(time.Second * 5)
+			job.StartAfter = time.After(time.Second * 10)
 			w.jobs <- job
 		} else {
 			w.log("Задача [%s] выполнена успешно", job.Name)
