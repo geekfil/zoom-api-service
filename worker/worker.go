@@ -2,6 +2,7 @@ package worker
 
 import (
 	"log"
+	"runtime"
 	"sync"
 	"time"
 )
@@ -94,4 +95,5 @@ func (w *Worker) handleJob(job *Job) {
 		job.IsRunning = false
 	}
 	<-w.jobsLimiter
+	runtime.Gosched()
 }
