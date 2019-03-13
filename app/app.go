@@ -44,6 +44,7 @@ func New(tgBot *telegram.Bot, config *Config, worker *worker.Worker) *App {
 		TelegramBot: tgBot,
 	}
 	_app.handlers()
+	go worker.Run()
 	return _app
 }
 
