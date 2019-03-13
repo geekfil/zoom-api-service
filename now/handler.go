@@ -6,5 +6,5 @@ import (
 )
 
 func Handler(w http.ResponseWriter, r *http.Request) {
-	app.Instance.Echo.ServeHTTP(w, r)
+	app.Build().Echo.ServeHTTP(w, r)
 }

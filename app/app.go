@@ -10,6 +10,7 @@ import (
 
 type Config struct {
 	Token string `env:"APP_TOKEN"`
+	Dev   bool   `env:"APP_DEV"`
 }
 
 func NewConfig() *Config {
@@ -27,10 +28,11 @@ type App struct {
 	TelegramBot *telegram.Bot
 }
 
-func (app *App) Run() {
+func (app *App) Run() error {
 	if err := app.Echo.Start(":3000"); err != nil {
-		log.Panicln(err)
+		return err
 	}
+	return nil
 }
 
 func New(tgBot *telegram.Bot, config *Config, worker *worker.Worker) *App {
@@ -43,4 +45,15 @@ func New(tgBot *telegram.Bot, config *Config, worker *worker.Worker) *App {
 	}
 	_app.handlers()
 	return _app
+}
+
+func Build() *App {
+	tgConf := telegram.NewConfig()
+	_worker := worker.NewWorker()
+	tg, err := telegram.NewBot(tgConf)
+	if err != nil {
+		log.Panic(err)
+	}
+	appConf := NewConfig()
+	return New(tg, appConf, _worker)
 }
