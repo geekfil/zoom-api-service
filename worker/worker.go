@@ -18,7 +18,6 @@ type Job struct {
 	IsRunning      bool
 	TimeStart      time.Time
 	TimeEnd        time.Time
-	StartAfter     <-chan time.Time
 }
 type JobList chan *Job
 
@@ -29,6 +28,7 @@ type Worker struct {
 	sync.Mutex
 	jobs        JobList
 	jobsLimiter chan struct{}
+	apiLimiter  <-chan time.Time
 	logger      *log.Logger
 	config      *Config
 }
@@ -36,7 +36,7 @@ type Worker struct {
 func NewWorker(opts ...OptionFunc) *Worker {
 	worker := &Worker{
 		jobs:        make(chan *Job, 1000),
-		jobsLimiter: make(chan struct{}, 500),
+		jobsLimiter: make(chan struct{}, 30),
 		logger:      DefaultLogger,
 		config:      DefaultConfig,
 	}
@@ -58,7 +58,6 @@ func (w *Worker) AddJob(name string, handler JobHandler, attempts uint) *Job {
 		CurrentAttempt: 0,
 		Errors:         make([]string, 0),
 		IsRunning:      false,
-		StartAfter:     time.After(time.Nanosecond),
 	}
 	w.jobs <- job
 	return job
@@ -72,17 +71,19 @@ func (w *Worker) log(format string, v ...interface{}) {
 
 func (w *Worker) Run() {
 	for job := range w.jobs {
-		select {
-		case w.jobsLimiter <- struct{}{}:
-			go w.handleJob(job)
-		case <-job.StartAfter:
-			go w.handleJob(job)
-		}
-
+		w.jobsLimiter <- struct{}{}
+		go w.handleJob(job)
 	}
 }
 
 func (w *Worker) handleJob(job *Job) {
+	w.Lock()
+	if w.apiLimiter != nil {
+		<-w.apiLimiter
+	}
+	w.apiLimiter = nil
+	w.Unlock()
+
 	if job.CurrentAttempt < job.Attempts && !job.IsRunning {
 		job.IsRunning = true
 		job.CurrentAttempt++
@@ -90,7 +91,9 @@ func (w *Worker) handleJob(job *Job) {
 		if err := job.handler(); err != nil {
 			w.log("Задача [%s] выполнена с ошибкой: %s", job.Name, err)
 			job.Errors = append(job.Errors, err.Error())
-			job.StartAfter = time.After(time.Second * 10)
+			w.Lock()
+			w.apiLimiter = time.After(time.Second * 5)
+			w.Unlock()
 			w.jobs <- job
 		} else {
 			w.log("Задача [%s] выполнена успешно", job.Name)
