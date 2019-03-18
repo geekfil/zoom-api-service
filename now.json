@@ -3,6 +3,7 @@
   "alias": [
     "zoom-moda-api.now.sh"
   ],
+  "regions": ["hnd1"],
   "env": {
     "TELEGRAM_TOKEN": "@telegram-token",
     "APP_TOKEN": "@app-token",
